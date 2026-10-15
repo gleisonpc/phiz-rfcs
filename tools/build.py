@@ -68,12 +68,12 @@ def build_rfc(d, meta):
 
 
 INDEX_CSS = """
-:root{--bg:#f6f5f3;--surface:#fff;--ink:#1c1a18;--muted:#6b645d;--line:#e4dfda;--accent:#ef5f17;--accent-ink:#b5430a;--accent-soft:#fde9dd;color-scheme:light dark}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141312;--surface:#1c1a19;--ink:#ede8e3;--muted:#a39b93;--line:#302c29;--accent:#ff7733;--accent-ink:#ff9b66;--accent-soft:#3a2316}}
+:root{--bg:#f6f5f3;--surface:#fff;--ink:#1c1a18;--muted:#6b645d;--line:#e4dfda;--accent:#25d366;--accent-ink:#12803d;--accent-soft:#dcf8e6;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141312;--surface:#1c1a19;--ink:#ede8e3;--muted:#a39b93;--line:#302c29;--accent:#25d366;--accent-ink:#5be68f;--accent-soft:#12301f}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.6 "IBM Plex Sans",system-ui,sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:0 16px}
 header{border-bottom:1px solid var(--line)}header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700}.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:.85rem}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);color:#052e16;display:grid;place-items:center;font-size:.85rem}
 .langs{display:inline-flex;border:1px solid var(--line);border-radius:9px;padding:3px;background:var(--surface);gap:2px}
 .langs button{font:600 .78rem inherit;font-family:inherit;border:0;background:transparent;color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer}
 .langs button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
@@ -81,7 +81,7 @@ h1{font:800 clamp(1.8rem,5vw,2.6rem)/1.1 "Schibsted Grotesk",system-ui,sans-seri
 .lead{color:var(--muted);margin:0 0 24px;max-width:60ch}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
 .filters button{font:500 .82rem inherit;font-family:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 13px;cursor:pointer}
-.filters button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.filters button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#052e16}
 .list{display:grid;gap:12px;padding:0;margin:0 0 60px;list-style:none}
 .card{display:block;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:16px 18px;color:inherit;text-decoration:none}
 .card:hover{border-color:var(--accent)}.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -130,7 +130,7 @@ def build_index(items):
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@600&display=swap">
 <style>{INDEX_CSS}</style></head><body>
-<header><div class="wrap"><div class="brand"><span class="logo" aria-hidden="true">P</span><span>PHIZ Open Platform</span></div>
+<header><div class="wrap"><div class="brand"><span class="logo" aria-hidden="true">P</span><span>PHIZCHAT</span></div>
 <div class="langs" role="group" aria-label="Language"><button type="button" data-set-lang="pt">PT-BR</button><button type="button" data-set-lang="en">EN-US</button><button type="button" data-set-lang="zh">中文</button></div></div></header>
 <main class="wrap"><h1>RFCs</h1>
 <p class="lead">{spans({"pt": "Propostas técnicas da plataforma, com status e comentários por seção.", "en": "Platform technical proposals, with status and per-section comments.", "zh": "平台技术提案，含状态与分节评论。"})}</p>
