@@ -1,0 +1,10 @@
+{
+  "id": "PHZ-XXXX",
+  "title": { "pt": "Título", "en": "Title", "zh": "标题" },
+  "summary": { "pt": "Uma frase.", "en": "One sentence.", "zh": "一句话。" },
+  "status": "draft",
+  "authors": [],
+  "reviewers": [],
+  "created": "YYYY-MM-DD",
+  "updated": "YYYY-MM-DD"
+}

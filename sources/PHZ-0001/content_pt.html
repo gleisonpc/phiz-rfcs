@@ -1,0 +1,462 @@
+<header class="hero">
+  <div class="eyebrow">RFC PHZ-0001 · Rascunho para revisão</div>
+  <h1>PHIZ Business Messaging API</h1>
+  <p class="lede">Autenticação por conta de comerciante, envio de mensagens para telefone ou PHIZ ID e webhooks de mensagens e status. Inspirada na Cloud API da Meta e pensada como base da futura Marketing API.</p>
+  <dl class="meta">
+    <div><dt>Status</dt><dd><span class="pill">Rascunho</span></dd></div>
+    <div><dt>Autor</dt><dd>Gleison (Engenharia PHIZ)</dd></div>
+    <div><dt>Data</dt><dd>15/10/2026</dd></div>
+    <div><dt>Revisores</dt><dd>Pedro Bettani (Brasil)<br>Vitor Mozer (Brasil)<br>Richard Liang (China)</dd></div>
+    <div><dt>Versão da API</dt><dd><code>v1</code> (proposta)</dd></div>
+  </dl>
+</header>
+
+<section>
+<h2 id="§summary"><span class="n">01</span>Resumo</h2>
+<p>Este documento propõe uma API pública para que sistemas externos (Blip, Salesforce, CRMs ou sistemas próprios do comerciante) conversem com usuários PHIZ em nome de um comerciante. A proposta tem quatro partes:</p>
+<ul>
+  <li><strong>Autenticação OAuth 2.0 (client credentials)</strong> com credenciais emitidas para a <em>conta de comerciante</em>, não mais para um canal.</li>
+  <li><strong>Envio de mensagens</strong> para um número de telefone (E.164) ou um PHIZ ID, diretamente em nome do comerciante. Usar um canal como remetente é opcional.</li>
+  <li><strong>Webhooks</strong> assinados que entregam as mensagens recebidas dos usuários e cada mudança de status das mensagens enviadas.</li>
+  <li>Uma <strong>Área do Desenvolvedor</strong> no Open Platform, no nível do comerciante, onde ele cadastra cada sistema externo que vai usar a API (por exemplo, Blip ou Salesforce) como uma <strong>integração</strong>. Cada integração tem <code>client_id</code> e secret próprios, webhook e histórico de entregas. Integrações não têm relação com Miniapps.</li>
+</ul>
+<p>Os contratos de mensagem e webhook reproduzem a estrutura da Cloud API da Meta, trocando apenas os nomes do domínio. Quem já integra com o WhatsApp Business Platform adapta a integração mudando URLs, credenciais e alguns nomes de campo.</p>
+</section>
+
+<section>
+<h2 id="§context"><span class="n">02</span>Contexto: como funciona hoje</h2>
+<p>Levantamento feito na documentação atual (Apifox, módulo <em>Authentication</em>) e no Open Platform (<code>open.phiz.chat</code>).</p>
+<h3>Autenticação atual</h3>
+<p>O token é obtido em <code>POST /gateway/openapi/auth</code> com <code>app_id</code>, <code>app_secret</code>, <code>description</code> (obrigatório) e <code>grant_type: "user_credentials"</code>. A resposta traz um access token de cerca de 2 horas e um refresh token de cerca de 90 dias, renovado em <code>POST /gateway/openapi/token/refresh</code>.</p>
+{CODE:legacy_auth}
+<h3>Onde ficam as credenciais</h3>
+<p>No Open Platform, cada canal tem a página <em>Canal › Configuração de Desenvolvimento</em> com <strong>AppID</strong> e <strong>AppSecret</strong>. O secret não é exibido e só pode ser <em>redefinido</em>. O canal também oferece, em <em>Robô de IA</em>, o modo de resposta <strong>“Phiz Business API”</strong>, que encaminha as conversas do canal para envio e callbacks de webhook da Business Message API.</p>
+<p>No nível do comerciante já existem o <strong>ID do Comerciante</strong> (UUID), <em>Gerenciamento da equipe</em> com funções, membros e registro de operações. Esses três elementos servem de base para a nova área.</p>
+<h3>O que muda com esta RFC</h3>
+<p>Cada linha mostra como funciona hoje, por que isso atrapalha, o que esta proposta coloca no lugar e um caso de uso concreto.</p>
+<div class="tbl changes"><table><thead><tr><th>Como é hoje</th><th>Por que atrapalha</th><th>Com esta RFC</th><th>Caso de uso</th></tr></thead><tbody><tr><td>Para falar com o usuário pela API, o comerciante precisa de um canal.</td><td>Quem não tem canal, ou quer falar como a própria empresa, não consegue mandar mensagem direta ao usuário.</td><td>O comerciante manda mensagem direta, como ele mesmo. Usar o canal passa a ser uma opção.</td><td>Uma farmácia sem canal avisa a cliente Maria, pelo telefone dela, que o pedido está pronto para retirada. A mensagem chega numa conversa direta com a farmácia.</td></tr><tr><td>Cada canal tem seu próprio AppID e secret.</td><td>Um comerciante com 5 canais administra 5 credenciais, e a Blip precisa de um token por canal.</td><td>Uma credencial por integração, na conta do comerciante, com acesso ao envio direto e aos canais escolhidos.</td><td>A Loja Exemplo tem 3 canais e usa a Blip. Hoje cadastra 3 AppIDs na Blip; com a RFC, cria uma integração “Blip” e marca envio direto e os 3 canais.</td></tr><tr><td>“Redefinir” invalida o secret na hora.</td><td>A integração fica fora do ar até alguém atualizar o secret no sistema externo.</td><td>Dois secrets válidos ao mesmo tempo: o novo entra e o antigo continua valendo por um período (padrão 24 h).</td><td>O secret do Salesforce apareceu num log. O time gera um novo, atualiza o Salesforce à tarde e revoga o antigo no fim do dia, sem nenhuma mensagem perdida.</td></tr><tr><td>O login usa <code>grant_type: user_credentials</code> e exige o campo <code>description</code>.</td><td>Ferramentas que já falam OAuth, como o Salesforce, não conseguem se conectar sem código sob medida.</td><td>OAuth 2.0 padrão (<code>client_credentials</code>), que essas ferramentas suportam de fábrica.</td><td>O administrador do Salesforce conecta a PHIZ em Named Credentials preenchendo só a URL do token, o client_id e o secret, sem desenvolvedor.</td></tr><tr><td>Existe um refresh token válido por cerca de 90 dias.</td><td>É mais um segredo de longa duração para guardar, sem ganho numa integração entre servidores.</td><td>Token de 1 h, sem refresh token; quando expira, o sistema pede outro.</td><td>A Blip renova o token sozinha a cada hora com o mesmo client_id e secret. Não existe refresh token que possa vencer num fim de semana e derrubar o atendimento.</td></tr><tr><td>Não há tela para webhook, logs ou várias integrações.</td><td>O comerciante não consegue configurar o webhook nem descobrir sozinho por que uma integração parou.</td><td>Área do Desenvolvedor com integrações separadas, webhook, histórico de entregas e logs.</td><td>As respostas dos clientes param de chegar na Blip. O comerciante abre o histórico de entregas, vê que o webhook responde erro 500 desde as 10h e, depois da correção, reenvia os eventos.</td></tr></tbody></table></div>
+
+</section>
+
+<section>
+<h2 id="§goals"><span class="n">03</span>Objetivos e não-objetivos</h2>
+<h4>Objetivos</h4>
+<ul>
+  <li>Credenciais ligadas à <strong>conta de comerciante</strong>, e não mais a cada canal. O comerciante cria uma <strong>integração</strong> para cada sistema externo (por exemplo, uma para a Blip e outra para o Salesforce). Cada integração recebe seu próprio <code>client_id</code> e secret, e o comerciante define o que ela pode fazer (enviar mensagens, consultar status, configurar webhook) e por quais remetentes pode falar: o próprio comerciante e, se ele quiser, seus canais.</li>
+  <li>OAuth 2.0 padrão (client credentials), compatível com bibliotecas e plataformas de mercado.</li>
+  <li>Enviar mensagens para <strong>telefone ou PHIZ ID</strong> e receber respostas e status por <strong>webhook assinado</strong>.</li>
+  <li>Compatibilidade estrutural com a Cloud API da Meta, para que integrações existentes migrem com pouco código.</li>
+  <li>Publicar a especificação da API em formato OpenAPI 3.1 (o padrão do Swagger). É um arquivo que descreve todas as rotas, campos, respostas e webhooks, e funciona como acordo entre o time que constrói a API e quem integra com ela. Com ele, parceiros geram documentação e código e testam antes da entrega.</li>
+</ul>
+<h4>Fora do escopo desta RFC</h4>
+<ul>
+  <li>Templates, campanhas e segmentação (Marketing API, fases futuras).</li>
+  <li>Preço e cobrança por conversa.</li>
+  <li>Grupos, chamadas de voz e vídeo.</li>
+  <li>SDKs oficiais (podem vir depois, gerados a partir do OpenAPI).</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§model"><span class="n">04</span>Modelo de domínio</h2>
+<p>A conta de comerciante passa a ser a raiz de tudo. O comerciante fala com o usuário PhizChat de <strong>duas formas</strong>:</p>
+<ul>
+  <li><strong>Mensagem direta (padrão).</strong> O comerciante envia como ele mesmo, com o nome e a foto de <em>Informações do comerciante</em>. Não precisa ter canal.</li>
+  <li><strong>Pelo canal (opcional).</strong> Quem tem canais pode enviar por eles, por exemplo para separar marcas ou áreas.</li>
+</ul>
+<p>As integrações pertencem ao comerciante e recebem permissão para usar uma das formas ou as duas.</p>
+<div class="diagram"><pre class="mermaid">
+flowchart LR
+  M["Conta de comerciante<br/>merchant_id"] --> I["Integrações<br/>Blip · Salesforce · sistema próprio<br/>client_id + secret cada"]
+  I -- "POST /v1/{sender_id}/messages" --> API["PHIZ Business API"]
+  API -- "Forma 1 · padrão<br/>sender_id = merchant_id" --> D["Mensagem direta<br/>do comerciante"]
+  API -. "Forma 2 · opcional<br/>sender_id = ID do canal" .-> C["Mensagem pelo<br/>canal do comerciante"]
+  D --> U(("Usuário PhizChat<br/>telefone ou PHIZ ID"))
+  C --> U
+  API -- "webhook: respostas e status" --> I
+</pre></div>
+<p class="cap">As duas formas usam a mesma rota e o mesmo formato; muda apenas o <code>sender_id</code>. A forma 2 só existe para comerciantes que têm canal.</p>
+<h3>Fluxo ponta a ponta</h3>
+<p>Visão para o time técnico: por onde a mensagem passa, da empresa até o usuário, e por onde voltam as respostas e os status.</p>
+<div class="diagram"><pre class="mermaid">
+flowchart LR
+  PP["PicPay"] --> B1["BSP<br/>ex.: Blip"]
+  AM["Ambar"] --> B2["BSP<br/>ex.: Salesforce"]
+  B1 --> API["PHIZ Business API<br/>/gateway/business<br/>Auth · Messages · Webhooks"]
+  B2 --> API
+  API -- "1–3 · token, envio e<br/>validação do remetente" --> MA
+  subgraph OP["Open Platform"]
+    MA["Merchant Account"]
+    MA -- "4a · sender_id = merchant_id<br/>padrão" --> DM["Direct Message"]
+    MA -. "4b · sender_id = ID do canal<br/>opcional" .-> CH["Channel"]
+    CH --> CM["Channel Message"]
+  end
+  DM -- "5 · entrega" --> APP["Phiz App"]
+  CM -- "5 · entrega" --> APP
+  APP --> U(("Usuário"))
+</pre></div>
+<p class="cap">Ida: da empresa até o usuário. A linha tracejada é o caminho opcional pelo canal.</p>
+<h4>Retorno: respostas e status</h4>
+<div class="diagram"><pre class="mermaid">
+flowchart LR
+  U(("Usuário")) -- "responde, recebe, lê" --> APP["Phiz App"]
+  APP -- "6 · eventos" --> WH["PHIZ Business API<br/>Webhooks"]
+  WH -- "webhook assinado" --> BSP["BSP da integração<br/>responsável pelo remetente"]
+  BSP --> EMP["Empresa"]
+</pre></div>
+<p class="cap">Volta: respostas do usuário e status das mensagens chegam ao BSP pelo webhook.</p>
+<ol>
+  <li><strong>Integração.</strong> A empresa (por exemplo, PicPay ou Ambar) usa um BSP para o atendimento. Na Área do Desenvolvedor, o comerciante cria uma integração para esse BSP e entrega o <code>client_id</code> e o secret.</li>
+  <li><strong>Token.</strong> O BSP chama <code>/oauth/token</code>. O Auth confere a integração na Merchant Account (secret, escopos e remetentes permitidos) e devolve um JWT de 1 h.</li>
+  <li><strong>Envio.</strong> O BSP chama <code>POST /v1/{sender_id}/messages</code>. A API valida token, escopo, remetente, política de opt-in e <code>Idempotency-Key</code>, responde <code>202</code> e coloca a mensagem na fila.</li>
+  <li><strong>Roteamento.</strong> Com <code>sender_id = merchant_id</code>, a mensagem segue como Direct Message (padrão). Com o ID de um canal, segue como Channel Message (opcional).</li>
+  <li><strong>Entrega.</strong> O Phiz App exibe a mensagem ao usuário e baixa a mídia direto do link informado.</li>
+  <li><strong>Retorno.</strong> Respostas do usuário e status (<code>sent</code>, <code>delivered</code>, <code>read</code>, <code>failed</code>) viram eventos que o serviço de Webhooks entrega, assinados, à integração responsável pelo remetente.</li>
+</ol>
+<div class="tbl"><table><thead><tr><th>Componente</th><th>Responsabilidade</th><th>Situação</th></tr></thead><tbody><tr><td>BSP / sistema da empresa</td><td>Chama a API, hospeda as mídias por link e recebe o webhook.</td><td>Externo</td></tr><tr><td>PHIZ Business API · Auth</td><td>Emite e revoga JWT; valida <code>client_id</code> e secret.</td><td>Novo</td></tr><tr><td>PHIZ Business API · Messages</td><td>Valida e aceita envios (<code>202</code>), aplica idempotência e limites, enfileira e roteia por <code>sender_id</code>.</td><td>Novo</td></tr><tr><td>PHIZ Business API · Webhooks</td><td>Consome eventos do app, assina e entrega com retentativas; guarda histórico de entregas por 72 h.</td><td>Novo</td></tr><tr><td>Open Platform · Merchant Account</td><td>Guarda integrações, secrets (hash), escopos, remetentes permitidos e configuração de webhook. Hospeda a Área do Desenvolvedor.</td><td>Alterado: credenciais saem do canal e vão para o comerciante</td></tr><tr><td>Direct Message</td><td>Conversa direta entre comerciante e usuário no app.</td><td>Novo (ver Q3)</td></tr><tr><td>Channel / Channel Message</td><td>Envio pelo canal do comerciante.</td><td>Existente</td></tr><tr><td>Phiz App</td><td>Exibe mensagens, baixa mídia pelo link e gera eventos de entrega, leitura e resposta.</td><td>Alterado</td></tr></tbody></table></div>
+<h3>Equivalência com a Cloud API da Meta</h3>
+<div class="tbl"><table><thead><tr><th>Meta (WhatsApp Cloud API)</th><th>PHIZ (esta proposta)</th></tr></thead><tbody>
+<tr><td>WhatsApp Business Account (WABA)</td><td>Conta de comerciante · <code>merchant_id</code></td></tr>
+<tr><td>Número comercial · <code>phone_number_id</code></td><td>Remetente · <code>sender_id</code>: o próprio comerciante (padrão, igual ao <code>merchant_id</code>) ou, opcionalmente, um canal (igual ao ID do canal)</td></tr>
+<tr><td>App da Meta + token de System User</td><td>App de desenvolvedor + OAuth client credentials</td></tr>
+<tr><td><code>wa_id</code></td><td><code>phiz_id</code></td></tr>
+<tr><td><code>POST /{phone-number-id}/messages</code></td><td><code>POST /v1/{sender_id}/messages</code></td></tr>
+<tr><td><code>object: whatsapp_business_account</code></td><td><code>object: phiz_merchant_account</code></td></tr>
+<tr><td><code>X-Hub-Signature-256</code></td><td><code>X-Phiz-Signature-256</code> + <code>X-Phiz-Timestamp</code></td></tr>
+<tr><td><code>hub.mode</code> / <code>hub.verify_token</code> / <code>hub.challenge</code></td><td>Iguais</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2 id="§principles"><span class="n">05</span>Princípios de design</h2>
+<ul>
+  <li><strong>Mesmo formato da Cloud API.</strong> Corpos de envio, respostas e webhooks seguem a estrutura da Meta. Divergimos só onde há ganho claro de segurança (timestamp na assinatura) ou de clareza (<code>to_type</code>).</li>
+  <li>Status HTTP, um único envelope de erro e <code>trace_id</code> em toda resposta de erro.</li>
+  <li>O envio é assíncrono e responde <code>202 Accepted</code>; o resultado chega pelo webhook.</li>
+  <li><strong>Idempotência.</strong> O cabeçalho <code>Idempotency-Key</code> evita mensagens duplicadas quando o cliente repete uma requisição.</li>
+  <li><strong>Menor privilégio.</strong> Cada integração tem escopos e uma lista de remetentes permitidos.</li>
+  <li>Versionamento <code>/v1</code>. Mudanças compatíveis (campos novos) entram de maneira padronizada; mudanças incompatíveis exigem <code>/v2</code>.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§auth"><span class="n">06</span>Autenticação</h2>
+<p>Usamos o fluxo <strong>client credentials</strong> do OAuth 2.0 (RFC 6749 §4.4). O app troca <code>client_id</code> e <code>client_secret</code> por um access token de 1 hora e o envia em <code>Authorization: Bearer</code> em todas as chamadas. Não há refresh token: quando o token expira, o app pede outro.</p>
+<div class="eps-wrap">
+<div class="eps">
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/oauth/token</code><span class="d">Emite access token</span></div>
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/oauth/revoke</code><span class="d">Revoga um token (RFC 7009)</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/me</code><span class="d">Mostra integração, comerciante, escopos e remetentes do token</span></div>
+</div></div>
+<div class="diagram"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant S as Sistema externo
+  participant A as PHIZ Auth
+  participant API as PHIZ API
+  S->>A: POST /oauth/token (client_id, client_secret)
+  A-->>S: 200 access_token (1 h), escopos
+  S->>API: POST /v1/{sender_id}/messages · Bearer token
+  API-->>S: 202 Accepted
+</pre></div>
+<p class="cap">Perto de expirar, o sistema pede outro token. Não há refresh token.</p>
+<h3>Requisição e resposta</h3>
+{CODE:token_curl}
+{CODE:token_resp}
+<p>Os endpoints <code>/oauth/*</code> usam o formato de erro do OAuth (RFC 6749 §5.2), que as bibliotecas já entendem:</p>
+{CODE:token_err}
+<h3>Formato do token</h3>
+<p>Decisão: o token é um JWT assinado com ES256 e chave publicada em <code>/.well-known/jwks.json</code>. O gateway valida o token localmente, sem consulta ao banco a cada chamada. Revogações e secrets rotacionados entram numa lista de negação de curta duração (até a expiração do token). Para o integrador o token é opaco; o conteúdo abaixo é informativo.</p>
+{CODE:jwt_claims}
+<h3>Escopos</h3>
+<div class="tbl"><table><thead><tr><th>Escopo</th><th>Permite</th></tr></thead><tbody>
+<tr><td><code>messages:send</code></td><td>Enviar mensagens e marcar como lidas</td></tr>
+<tr><td><code>messages:read</code></td><td>Consultar status de mensagens</td></tr>
+<tr><td><code>webhooks:manage</code></td><td>Configurar, testar e reenviar o webhook do próprio app</td></tr>
+<tr><td><code>account:read</code></td><td>Ler dados da conta de comerciante e dos remetentes</td></tr>
+<tr><td><code>templates:manage</code></td><td>Reservado para a Marketing API</td></tr>
+</tbody></table></div>
+<h3>Secrets e rotação</h3>
+<ul>
+  <li>O secret tem prefixo de ambiente (<code>phzsk_live_</code>, <code>phzsk_test_</code>), o que ajuda scanners de vazamento a reconhecê-lo.</li>
+  <li>É exibido <strong>uma única vez</strong>, na criação ou rotação, e guardado apenas como hash (Argon2id).</li>
+  <li>Cada app pode ter <strong>até dois secrets ativos</strong>. Ao gerar um novo, o anterior continua válido pelo período escolhido (padrão 24 h, de 0 a 7 dias), permitindo trocar sem queda.</li>
+  <li>A tela mostra o último uso de cada secret, para saber se o antigo ainda está em uso antes de revogá-lo.</li>
+  <li>Opcional: lista de IPs permitidos por app.</li>
+</ul>
+<h3>Atual × proposto</h3>
+<div class="tbl"><table><thead><tr><th>Aspecto</th><th>Hoje</th><th>Proposta</th></tr></thead><tbody>
+<tr><td>Dono da credencial</td><td>Canal</td><td>Conta de comerciante (via app)</td></tr>
+<tr><td>Fluxo</td><td><code>user_credentials</code> (próprio)</td><td><code>client_credentials</code> (RFC 6749)</td></tr>
+<tr><td>Campos obrigatórios extras</td><td><code>description</code></td><td>Nenhum</td></tr>
+<tr><td>Validade</td><td>~2 h + refresh token ~90 dias</td><td>1 h, sem refresh token</td></tr>
+<tr><td>Escopos</td><td><code>channel</code></td><td>Por capacidade + remetentes permitidos</td></tr>
+<tr><td>Rotação</td><td>Redefinir invalida na hora</td><td>Dois secrets ativos, com sobreposição</td></tr>
+<tr><td>Erros</td><td>HTTP 200 + <code>code</code> no corpo</td><td>Status HTTP real + envelope padrão</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2 id="§messages"><span class="n">07</span>Envio de mensagens</h2>
+<div class="eps">
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/v1/{sender_id}/messages</code><span class="d">Envia mensagem ou marca como lida</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/messages/{message_id}</code><span class="d">Último status conhecido (contingência)</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/merchants/{merchant_id}/senders</code><span class="d">Remetentes (comerciante e canais) que a integração pode usar</span></div>
+</div>
+<h3>Remetente: o comerciante ou um canal</h3>
+<p>O <code>sender_id</code> no caminho define em nome de quem a mensagem sai:</p>
+<ul>
+  <li><strong>O próprio comerciante (padrão).</strong> Use o <code>merchant_id</code>. A mensagem aparece para o usuário numa conversa <strong>Business Account</strong>, direta com a empresa, e não depende de o comerciante ter canal.</li>
+  <li><strong>Um canal (opcional).</strong> Use o ID do canal, por exemplo <code>1231</code>. Útil para quem separa marcas ou áreas em canais diferentes. A mensagem aparece na conversa <strong>Channel Service</strong> do canal, a mesma usada pelo Channel Bot.</li>
+</ul>
+<p>Os dois funcionam do mesmo jeito na API: mesmos campos, mesmas respostas e mesmos webhooks. Nos webhooks, <code>metadata.sender_type</code> indica qual foi usado e <code>metadata.conversation_type</code> traz o tipo de conversa (<code>business_account</code> ou <code>channel_service</code>).</p>
+<h3>Destinatário: telefone ou PHIZ ID</h3>
+<p>O campo <code>to</code> recebe o destinatário e <code>to_type</code> diz como interpretá-lo:</p>
+<ul>
+  <li><code>phone</code> (padrão): telefone em E.164, por exemplo <code>+5511987654321</code>. A PHIZ resolve o número para a conta do usuário.</li>
+  <li><code>phiz_id</code>: o PHIZ ID do usuário, por exemplo <code>839201447</code>. É o identificador que chega nos webhooks, então respostas podem usá-lo diretamente.</li>
+</ul>
+<p>Se o telefone não pertencer a uma conta PHIZ, ou o usuário tiver bloqueado o remetente, a API ainda responde <code>202</code> e o webhook informa <code>failed</code> com erro <code>2104</code>. Assim a API não serve para descobrir quais números têm conta na PHIZ.</p>
+<h3>Exemplo: texto para telefone</h3>
+{CODE:send_curl}
+{CODE:send_resp}
+<p><code>contacts[].phiz_id</code> só vem preenchido se o usuário já conversou com esse remetente. <code>messages[].id</code> é a chave para relacionar os webhooks de status.</p>
+<h3>Outros exemplos</h3>
+<h4>O mesmo envio, saindo por um canal</h4>
+{CODE:send_curl_channel}
+<h4>Texto para PHIZ ID</h4>
+{CODE:send_phiz_id}
+<h4>Áudio por link</h4>
+{CODE:send_audio}
+<h4>Vídeo por link, para PHIZ ID</h4>
+{CODE:send_video}
+<h4>Documento com nome de arquivo</h4>
+{CODE:send_document}
+<h4>Botões de resposta</h4>
+{CODE:send_buttons}
+<h4>Marcar mensagem recebida como lida</h4>
+{CODE:mark_read}
+<h3>Tipos suportados</h3>
+<div class="tbl"><table><thead><tr><th>type</th><th>Conteúdo</th><th>Fase</th></tr></thead><tbody>
+<tr><td><code>text</code></td><td>Até 4.096 caracteres; <code>preview_url</code> opcional</td><td>MVP</td></tr>
+<tr><td><code>image</code></td><td>Por <code>link</code> HTTPS; legenda opcional</td><td>MVP</td></tr><tr><td><code>audio</code></td><td>Por <code>link</code> HTTPS; sem legenda</td><td>MVP</td></tr><tr><td><code>video</code></td><td>Por <code>link</code> HTTPS; legenda opcional</td><td>MVP</td></tr><tr><td><code>document</code></td><td>Por <code>link</code> HTTPS; legenda e nome do arquivo opcionais</td><td>MVP</td></tr>
+
+
+
+
+</tbody></table></div>
+<h3>Formatos e limites de mídia</h3>
+<p>A mídia é enviada sempre por <code>link</code>: uma URL HTTPS pública, hospedada pelo comerciante ou pelo parceiro. A API de mensagens <strong>não processa nem armazena</strong> mídia; ela apenas repassa o link para o app do usuário, que baixa o arquivo direto dessa URL. Por isso o link precisa continuar acessível depois do envio, e o arquivo já deve estar no formato e no tamanho aceitos pelo app.</p>
+<div class="tbl"><table><thead><tr><th>Tipo</th><th>Formatos aceitos</th><th>Tamanho máximo</th></tr></thead><tbody>
+<tr><td><code>image</code></td><td>JPEG, PNG, WebP</td><td>5 MB</td></tr>
+<tr><td><code>audio</code></td><td>AAC, MP3, M4A, OGG (Opus), AMR</td><td>16 MB</td></tr>
+<tr><td><code>video</code></td><td>MP4 (H.264 + AAC), 3GP</td><td>16 MB</td></tr>
+<tr><td><code>document</code></td><td>PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT, CSV</td><td>100 MB</td></tr>
+</tbody></table></div>
+<p class="cap">Formatos e tamanhos que o app PHIZ deve aceitar, inspirados nos limites da Cloud API. A conversão e a compressão ficam a cargo de quem hospeda o arquivo. Precisam ser confirmados com o time responsável pela mídia no app (ver Q8).</p>
+<h3>Política de envio</h3>
+<div class="note-box risk"><span class="lbl">A definir por Produto</span><p>Produto precisa definir uma política de opt-in: em quais condições o comerciante pode iniciar uma conversa com o usuário e como o usuário autoriza ou cancela o recebimento de mensagens. Ver Q1.</p></div>
+<h3>Idempotência</h3>
+<p>Envie <code>Idempotency-Key</code> em todo envio. A mesma chave em até 24 h devolve a resposta original sem reenviar. A mesma chave com corpo diferente devolve <code>409</code>. Isso torna seguros os retries após timeout ou erro <code>5xx</code>.</p>
+</section>
+
+<section>
+<h2 id="§webhooks"><span class="n">08</span>Webhooks</h2>
+<p>Cada app tem uma assinatura de webhook com URL, <code>verify_token</code> e lista de eventos. A configuração é feita na Área do Desenvolvedor ou pela API.</p>
+<div class="eps">
+  <div class="ep"><span class="m m-put">PUT</span><code class="p">/v1/apps/{app_id}/webhook</code><span class="d">Define URL, verify_token e eventos</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/apps/{app_id}/webhook</code><span class="d">Configuração e saúde</span></div>
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/v1/apps/{app_id}/webhook/test</code><span class="d">Dispara evento de teste assinado</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/apps/{app_id}/webhook/deliveries</code><span class="d">Histórico de entregas (72 h)</span></div>
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/v1/apps/{app_id}/webhook/deliveries/{id}/replay</code><span class="d">Reenvia uma entrega</span></div>
+</div>
+{CODE:webhook_put}
+<h3>Eventos</h3>
+<div class="tbl"><table><thead><tr><th>field</th><th>Quando</th></tr></thead><tbody>
+<tr><td><code>messages</code></td><td>O usuário enviou mensagem, clicou num botão ou reagiu</td></tr>
+<tr><td><code>message_status</code></td><td>Uma mensagem enviada mudou para <code>sent</code>, <code>delivered</code>, <code>read</code> ou <code>failed</code></td></tr>
+<tr><td><code>sender_update</code></td><td>Mudou o status, a qualidade ou o limite de um remetente (comerciante ou canal)</td></tr>
+<tr><td><code>account_update</code></td><td>Mudança na conta de comerciante (verificação, restrição)</td></tr>
+</tbody></table></div>
+<h3>Verificação da URL</h3>
+<p>Antes de ativar, a PHIZ faz um <code>GET</code> na URL com <code>hub.mode=subscribe</code>, <code>hub.verify_token</code> e <code>hub.challenge</code>. O servidor confere o token e responde 200 com o valor de <code>hub.challenge</code>. É o mesmo handshake da Meta.</p>
+<h3>Assinatura</h3>
+<p>Todo <code>POST</code> traz os cabeçalhos abaixo. A assinatura é um HMAC-SHA256 de <code>{X-Phiz-Timestamp}.{corpo bruto}</code> com o <strong>webhook secret</strong> do app, separado do client secret. Rejeite eventos com timestamp mais de 5 minutos fora do relógio. Durante a rotação do webhook secret, o cabeçalho traz duas assinaturas separadas por vírgula.</p>
+{CODE:wh_headers}
+{CODE:wh_verify_node}
+{CODE:wh_verify_py}
+<h3>Mensagem recebida</h3>
+{CODE:wh_inbound}
+<h3>Mensagem recebida com mídia</h3>
+<p>Quando o usuário envia imagem, áudio, vídeo ou documento, o evento traz um <code>url</code> temporário que aponta para o arquivo no armazenamento atual do chat. A API de mensagens não faz cópia nem guarda a mídia; baixe o arquivo enquanto o link estiver válido. Abaixo, o item <code>messages[]</code> de uma mensagem de voz:</p>
+{CODE:wh_inbound_media}
+<h3>Status de mensagem enviada</h3>
+{CODE:wh_status}
+{CODE:wh_failed}
+<div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> accepted: 202 da API
+  accepted --> sent: entregue ao servidor PHIZ
+  sent --> delivered: chegou ao aparelho
+  delivered --> read: usuário abriu
+  accepted --> failed
+  sent --> failed
+  read --> [*]
+  failed --> [*]
+</pre></div>
+<p class="cap">Ciclo de vida do status. <code>accepted</code> só aparece na resposta da API e no <code>GET /v1/messages/{id}</code>; os demais chegam por webhook.</p>
+<h3>Garantias de entrega</h3>
+<ul>
+  <li><strong>Pelo menos uma vez.</strong> O mesmo evento pode chegar mais de uma vez; use <code>X-Phiz-Delivery-Id</code> para descartar duplicados.</li>
+  <li><strong>Sem ordem garantida.</strong> Um <code>read</code> pode chegar antes do <code>delivered</code>; ordene por <code>timestamp</code> e nunca regrida status.</li>
+  <li><strong>Responda em até 10 s</strong> com 2xx e processe depois. Qualquer outra resposta, ou timeout, conta como falha.</li>
+  <li><strong>Retentativas</strong> com backoff exponencial (10 s, 30 s, 1 min, 5 min, 15 min, 1 h e depois a cada hora) por até 24 h. Depois disso o evento fica disponível para reenvio manual por 72 h.</li>
+  <li>Se a URL falhar continuamente por 24 h, o webhook passa para <code>failing</code> e os administradores do comerciante recebem um aviso.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§errors"><span class="n">09</span>Erros, limites e versões</h2>
+<p>Fora de <code>/oauth/*</code>, todos os erros usam um envelope único:</p>
+{CODE:error_env}
+<div class="tbl num"><table><thead><tr><th>code</th><th>HTTP</th><th>type</th><th>Significado</th></tr></thead><tbody>
+<tr><td>1001</td><td>400</td><td>invalid_request</td><td>JSON malformado ou campo obrigatório ausente</td></tr>
+<tr><td>1003</td><td>400</td><td>invalid_parameter</td><td>Valor inválido (ver <code>details</code>)</td></tr>
+<tr><td>1101</td><td>401</td><td>token_expired</td><td>Token expirado; peça outro</td></tr>
+<tr><td>1102</td><td>401</td><td>invalid_token</td><td>Token inválido ou revogado</td></tr>
+<tr><td>1201</td><td>403</td><td>insufficient_scope</td><td>O token não tem o escopo necessário</td></tr>
+<tr><td>1202</td><td>403</td><td>sender_not_allowed</td><td>A integração não tem permissão para esse remetente</td></tr>
+<tr><td>1301</td><td>404</td><td>not_found</td><td>Recurso inexistente ou de outro comerciante</td></tr>
+<tr><td>1401</td><td>409</td><td>idempotency_conflict</td><td>Mesma Idempotency-Key com corpo diferente</td></tr>
+<tr><td>1501</td><td>429</td><td>rate_limited</td><td>Limite de requisições; respeite <code>Retry-After</code></td></tr>
+<tr><td>2104</td><td>webhook</td><td>recipient_not_reachable</td><td>Telefone sem conta PHIZ ou usuário bloqueou o remetente</td></tr>
+<tr><td>2201</td><td>422</td><td>policy_violation</td><td>Envio não permitido pela política de opt-in</td></tr>
+<tr><td>2202</td><td>422</td><td>unsupported_type</td><td>Tipo de mensagem não habilitado para o remetente</td></tr>
+<tr><td>2301</td><td>webhook</td><td>media_unavailable</td><td>O app não conseguiu baixar a mídia do <code>link</code> (URL fora do ar, expirada ou formato não aceito)</td></tr>
+<tr><td>2401</td><td>403</td><td>sender_disabled</td><td>Remetente desativado ou restrito</td></tr>
+<tr><td>2501</td><td>429</td><td>messaging_limit_reached</td><td>Limite diário de destinatários do remetente atingido</td></tr>
+<tr><td>5000</td><td>500</td><td>internal_error</td><td>Erro interno; repita com a mesma Idempotency-Key</td></tr>
+</tbody></table></div>
+<h3>Limites (proposta inicial)</h3>
+<div class="tbl"><table><thead><tr><th>Recurso</th><th>Limite</th></tr></thead><tbody>
+<tr><td><code>/oauth/token</code></td><td>60 req/min por app</td></tr>
+<tr><td>Envio de mensagens</td><td>80 msg/s por remetente (ajustável por contrato)</td></tr>
+<tr><td>Demais endpoints</td><td>600 req/min por app</td></tr>
+<tr><td>Destinatários únicos de mensagens iniciadas pela empresa</td><td>Faixas por remetente: 1 mil → 10 mil → 100 mil → ilimitado em 24 h, conforme qualidade (Fase 2)</td></tr>
+</tbody></table></div>
+{CODE:ratelimit}
+<h3>Ambientes</h3>
+<ul>
+  <li><strong>Produção:</strong> <code>https://{gateway}/gateway/business</code></li>
+  <li><strong>Sandbox:</strong> <code>https://{gateway-de-teste}/gateway/business</code>, no ambiente de testes usado hoje (Openapi-test), com um remetente de teste por comerciante e até 5 destinatários cadastrados (como o número de teste da Meta). Secrets <code>phzsk_test_</code> só funcionam aqui.</li>
+</ul>
+<h3>Prefixo de rotas</h3>
+<p>A nova API roda no mesmo gateway da API atual, separada por prefixo:</p>
+<ul>
+  <li><code>/gateway/openapi/…</code>: API atual, mantida durante a migração.</li>
+  <li><code>/gateway/business/…</code>: esta API (autenticação, mensagens e webhooks).</li>
+</ul>
+<p>Com prefixos distintos, cada contexto tem roteamento, autenticação, limites e logs próprios, e o legado pode ser desligado sem afetar a nova API. Todos os caminhos deste documento, como <code>/oauth/token</code> e <code>/v1/{sender_id}/messages</code>, são relativos a <code>https://{gateway}/gateway/business</code>. Nos exemplos, esse endereço aparece como <code>$PHIZ_API_BASE</code>.</p>
+</section>
+
+<section>
+<h2 id="§devarea"><span class="n">10</span>Área do Desenvolvedor no Open Platform</h2>
+<p>A configuração de desenvolvedor sai de <em>Canal › Configuração de Desenvolvimento</em> e vira um item de menu do comerciante, <strong>Desenvolvedor</strong>, ao lado de <em>Configurações</em>. Ela reaproveita o ID do Comerciante, as funções de <em>Gerenciamento da equipe</em> e o <em>Registro de operações</em> que já existem.</p>
+<div class="mock" aria-label="Esboço da tela de credenciais">
+  <div class="mock-top"><i></i><i></i><i></i><span>open.phiz.chat/developer/apps/app_2Fk81PzQ</span></div>
+  <div class="mock-body">
+    <nav class="mock-nav"><span class="grp">Desenvolvedor</span><span>Visão geral</span><span class="on">Apps</span><span>Remetentes</span><span>Logs de API</span><span>Sandbox</span></nav>
+    <div class="mock-main">
+      <h6>Integração Blip <span class="chip">Produção</span></h6>
+      <dl class="kv">
+        <dt>ID do comerciante</dt><dd><code>7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57</code></dd>
+        <dt>Client ID</dt><dd><code>app_2Fk81PzQ</code><span class="fakebtn">Copiar</span></dd>
+        <dt>Client secret</dt><dd><code>phzsk_live_••••a91c</code><span class="chip">usado há 3 min</span><span class="fakebtn">Gerar novo secret</span></dd>
+        <dt>Secret anterior</dt><dd><code>phzsk_live_••••77d0</code><span class="chip w">expira em 18 h</span><span class="fakebtn">Revogar agora</span></dd>
+        <dt>Escopos</dt><dd><code>messages:send</code><code>messages:read</code><code>webhooks:manage</code></dd>
+        <dt>Remetentes permitidos</dt><dd>Loja Exemplo (comerciante) · Loja Exemplo - Ofertas <code>1231</code></dd>
+        <dt>Webhook</dt><dd><span class="chip">Verificado</span><span class="fakebtn">Testar</span><span class="fakebtn pri">Ver entregas</span></dd>
+      </dl>
+    </div>
+  </div>
+</div>
+<p class="cap">Esboço ilustrativo da página de um app, com valores de exemplo.</p>
+<h3>Telas</h3>
+<div class="screens">
+  <div class="screen"><h5>Visão geral</h5><span class="path">/developer</span><ul><li>Mensagens enviadas, entregues e com falha nas últimas 24 h</li><li>Saúde dos webhooks</li><li>Alertas: secret antigo em uso, webhook falhando</li></ul></div>
+  <div class="screen"><h5>Apps</h5><span class="path">/developer/apps</span><ul><li>Criar app: nome, tipo de integração (própria, Blip, Salesforce, outra), ambiente</li><li>Escopos e remetentes permitidos</li><li>Client ID, secrets com rotação e último uso</li><li>Lista de IPs permitidos (opcional)</li><li>Desativar ou excluir app</li></ul></div>
+  <div class="screen"><h5>Webhook do app</h5><span class="path">/developer/apps/:id/webhook</span><ul><li>URL, verify token e eventos</li><li>Webhook secret com rotação</li><li>Verificar e enviar teste</li><li>Entregas das últimas 72 h com status HTTP, tentativas, latência e reenviar</li></ul></div>
+  <div class="screen"><h5>Remetentes</h5><span class="path">/developer/senders</span><ul><li>O próprio comerciante, sempre presente, e os canais, se houver</li><li>Cada um com <code>sender_id</code>, status, limite e qualidade</li><li>Escolhe a integração que recebe as conversas de cada remetente</li><li>Para canais, liga o modo “Phiz Business API”</li></ul></div>
+  <div class="screen"><h5>Logs de API</h5><span class="path">/developer/logs</span><ul><li>Requisições dos últimos 7 dias: método, rota, status, latência, <code>trace_id</code></li><li>Filtro por app e por código de erro</li></ul></div>
+  <div class="screen"><h5>Sandbox</h5><span class="path">/developer/sandbox</span><ul><li>Remetente de teste</li><li>Cadastro de até 5 destinatários de teste</li><li>Credenciais <code>phzsk_test_</code></li></ul></div>
+</div>
+<h3>Permissões</h3>
+<p>Novas permissões entram na tela <em>Gestão de Funções</em> já existente. O Superadministrador recebe todas.</p>
+<div class="tbl"><table><thead><tr><th>Permissão</th><th>Permite</th></tr></thead><tbody>
+<tr><td><code>developer.view</code></td><td>Ver integrações, remetentes, logs e entregas (sem secrets)</td></tr>
+<tr><td><code>developer.apps.manage</code></td><td>Criar, editar e desativar integrações; definir escopos e remetentes</td></tr>
+<tr><td><code>developer.secrets.manage</code></td><td>Gerar, rotacionar e revogar secrets</td></tr>
+<tr><td><code>developer.webhooks.manage</code></td><td>Configurar webhook, testar e reenviar entregas</td></tr>
+</tbody></table></div>
+<p>Criar, rotacionar ou revogar um secret, mudar escopos e alterar o webhook gera registro em <em>Registro de operações</em> e um e-mail para os administradores.</p>
+<h3>Remetente com mais de uma integração</h3>
+<p>Para evitar que dois sistemas respondam ao mesmo usuário, cada remetente (o comerciante ou um canal) tem <strong>uma integração responsável</strong> pelas conversas, escolhida na tela <em>Remetentes</em>. Só essa integração recebe o evento <code>messages</code> daquele remetente. Qualquer integração com permissão pode enviar por ele e recebe o <code>message_status</code> das mensagens que enviou. Um protocolo de passagem de conversa entre integrações (como o handover do Messenger) fica para depois.</p>
+<h3>Migração das credenciais de canal</h3>
+<ol>
+  <li><strong>Criação automática.</strong> Para cada canal com AppID, criamos um app “Legado – nome do canal” no comerciante, com o mesmo AppID como <code>client_id</code>, o mesmo secret (já armazenado) e permissão só para aquele canal. Nenhuma integração para.</li>
+  <li><strong>Convivência.</strong> <code>/gateway/openapi/auth</code> e <code>/token/refresh</code> continuam funcionando. A página do canal mostra um aviso apontando para a nova área.</li>
+  <li><strong>Somente leitura.</strong> Após 3 meses, a página do canal deixa de permitir redefinir o secret; a gestão passa a ser só na nova área.</li>
+  <li><strong>Desligamento.</strong> Após 6 meses, e com o uso medido perto de zero, os endpoints antigos respondem <code>410 Gone</code>.</li>
+</ol>
+</section>
+
+<section>
+<h2 id="§partners"><span class="n">11</span>Integração com parceiros</h2>
+<p><strong>No MVP</strong>, o comerciante cria um app na Área do Desenvolvedor e cola <code>client_id</code> e secret na Blip, no Salesforce ou no próprio sistema. As URLs de webhook vêm do parceiro. Como os contratos seguem a Cloud API, parceiros que já têm conector de WhatsApp reaproveitam a maior parte dele.</p>
+<p><strong>Numa fase seguinte</strong>, criamos o programa de <em>parceiros de tecnologia</em>, equivalente ao Embedded Signup da Meta:</p>
+<ul>
+  <li>O parceiro registra um app de plataforma na PHIZ.</li>
+  <li>O comerciante clica em “Conectar com a PHIZ” dentro do parceiro e autoriza escopos e remetentes numa tela de consentimento (OAuth 2.0 authorization code + PKCE).</li>
+  <li>O parceiro recebe tokens limitados àquele comerciante e um único webhook para todos os seus clientes. O campo <code>entry[].id</code> do envelope identifica o comerciante; por isso o envelope já nasce com essa estrutura.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§marketing"><span class="n">12</span>Caminho para a Marketing API</h2>
+<p>Esta RFC reserva o espaço que a Marketing API vai ocupar, sem implementá-la:</p>
+<ul>
+  <li><code>type: template</code> no envio e o escopo <code>templates:manage</code> já existem no contrato.</li>
+  <li>Templates com aprovação: <code>/v1/merchants/{merchant_id}/message_templates</code> e evento de webhook <code>template_status</code>.</li>
+  <li>Categorias de conversa (<code>conversation.origin.type</code>: <code>service</code>, <code>utility</code>, <code>marketing</code>), base para relatórios e preço.</li>
+  <li>Gestão de opt-in e opt-out por remetente, campanhas para segmentos e métricas em <code>/v1/merchants/{merchant_id}/analytics</code>.</li>
+  <li>Faixas de limite de envio e nota de qualidade por remetente, já presentes no recurso <code>Sender</code>.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§plan"><span class="n">13</span>Plano de entrega</h2>
+<div class="phases">
+  <div class="phase first"><span class="tag">FASE 1 · MVP</span><h5>Autenticar e enviar</h5><ul><li><code>/oauth/token</code>, <code>/oauth/revoke</code>, <code>/v1/me</code></li><li>Envio de <code>text</code>, <code>image</code>, <code>audio</code>, <code>video</code> e <code>document</code> para telefone e PHIZ ID</li><li>Webhooks <code>messages</code> e <code>message_status</code> com assinatura</li><li>Área do Desenvolvedor: apps, secrets, webhook</li><li>Remetente padrão (o próprio comerciante) para todos; canais como remetentes opcionais</li><li>Migração automática das credenciais de canal</li></ul></div>
+</div>
+<p>Datas serão definidas após a revisão desta RFC com o time da China.</p>
+</section>
+
+<section>
+<h2 id="§questions"><span class="n">14</span>Questões em aberto</h2>
+<ol class="qs">
+  <li><strong>Política de opt-in.</strong> Produto precisa definir em quais condições o comerciante pode iniciar uma conversa (por exemplo, janela de atendimento, autorização explícita ou relação prévia com o comerciante) e como o usuário autoriza ou cancela. A regra vale para Business Account e Channel Service.</li>
+  <li><strong>IDs de remetente.</strong> Usar diretamente o <code>merchant_id</code> e o ID do canal como <code>sender_id</code>, ou criar IDs opacos novos? Usar os existentes simplifica a migração, mas expõe o ID sequencial do canal.</li>
+  <li><strong>Tipo de conversa Business Account.</strong> Confirmar o caminho Contas públicas › Service › Business Account e a definição: conversa de serviço de mão dupla para empresas, comerciantes, governos e instituições, com mensagens do usuário permitidas e Menu configurável, e mensagens ativas sujeitas às regras de autorização e envio. Esse tipo já existe no app ou precisa ser construído? Como o usuário bloqueia ou silencia um Business Account?</li>
+  <li><strong>Tipos de conversa vigentes.</strong> Revisar a hierarquia e a tabela de permissões (v1.2): quais tipos existem hoje, quais regras atuais são diferentes, quais tipos não existem e quais estão faltando.</li>
+  <li><strong>Telefones.</strong> Todos os usuários PHIZ têm telefone verificado? Como tratar números de outros países e trocas de número?</li>
+  <li><strong>Uma integração responsável por remetente</strong> é suficiente, ou precisamos de passagem de conversa entre apps (bot → atendente humano) já na Fase 2?</li>
+  <li><strong>Business Message API existente.</strong> O modo “Phiz Business API” do Robô de IA já tem endpoints de envio e callback e parece corresponder ao Channel Service com Channel Bot. Esta RFC substitui, estende ou encapsula essa API?</li>
+  <li><strong>Mídia por link.</strong> O app PHIZ reproduz todos os formatos da tabela de mídia e quais tamanhos aceita? O app baixa direto da URL do comerciante (o que expõe o IP do usuário a esse servidor) ou por um proxy da PHIZ que não armazena? Devemos verificar o link antes de aceitar o envio (por exemplo, checar tipo e tamanho sem baixar o arquivo)? Por quanto tempo o <code>url</code> das mídias recebidas fica válido?</li>
+</ol>
+</section>
+
+<section>
+<h2 id="§openapi"><span class="n">15</span>Referência OpenAPI</h2>
+<p>A especificação OpenAPI 3.1 abaixo cobre todos os endpoints e webhooks desta RFC, com descrições neste idioma. O botão “Try it out” está desligado porque a API ainda não existe. Use “Copiar OpenAPI” para levar o YAML para Apifox, Postman ou um gerador de SDK.</p>
+</section>

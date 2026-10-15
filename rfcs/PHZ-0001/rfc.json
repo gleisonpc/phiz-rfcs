@@ -1,0 +1,18 @@
+{
+  "id": "PHZ-0001",
+  "title": {
+    "pt": "PHIZ Business Messaging API",
+    "en": "PHIZ Business Messaging API",
+    "zh": "PHIZ 商家消息 API"
+  },
+  "summary": {
+    "pt": "Autenticação OAuth, envio de mensagens para telefone ou PHIZ ID, webhooks assinados e Área do Desenvolvedor no nível do comerciante.",
+    "en": "OAuth authentication, sending messages to a phone number or PHIZ ID, signed webhooks and a merchant-level Developer area.",
+    "zh": "OAuth 认证、向手机号或 PHIZ ID 发送消息、签名 Webhook，以及商家级开发者区域。"
+  },
+  "status": "in-review",
+  "authors": ["Gleison"],
+  "reviewers": ["Pedro Bettani", "Vitor Mozer", "Richard Liang"],
+  "created": "2026-10-15",
+  "updated": "2026-10-15"
+}

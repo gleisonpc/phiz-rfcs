@@ -1,0 +1,461 @@
+<header class="hero">
+  <div class="eyebrow">RFC PHZ-0001 · Draft for review</div>
+  <h1>PHIZ Business Messaging API</h1>
+  <p class="lede">Merchant-level authentication, sending messages to a phone number or PHIZ ID, and webhooks for messages and statuses. Inspired by Meta's Cloud API and designed as the foundation of the future Marketing API.</p>
+  <dl class="meta">
+    <div><dt>Status</dt><dd><span class="pill">Draft</span></dd></div>
+    <div><dt>Author</dt><dd>Gleison (PHIZ Engineering)</dd></div>
+    <div><dt>Date</dt><dd>2026-10-15</dd></div>
+    <div><dt>Reviewers</dt><dd>Pedro Bettani (Brazil)<br>Vitor Mozer (Brazil)<br>Richard Liang (China)</dd></div>
+    <div><dt>API version</dt><dd><code>v1</code> (proposed)</dd></div>
+  </dl>
+</header>
+
+<section>
+<h2 id="§summary"><span class="n">01</span>Summary</h2>
+<p>This document proposes a public API that lets external systems (Blip, Salesforce, CRMs or the merchant's own systems) talk to PHIZ users on behalf of a merchant. It has four parts:</p>
+<ul>
+  <li><strong>OAuth 2.0 authentication (client credentials)</strong> with credentials issued to the <em>merchant account</em> instead of a channel.</li>
+  <li><strong>Sending messages</strong> to a phone number (E.164) or a PHIZ ID directly on behalf of the merchant. Using a channel as the sender is optional.</li>
+  <li>Signed <strong>webhooks</strong> that deliver messages received from users and every status change of sent messages.</li>
+  <li>A merchant-level <strong>Developer area</strong> in the Open Platform where the merchant registers each external system that will use the API (for example Blip or Salesforce) as an <strong>integration</strong>. Each integration has its own <code>client_id</code> and secret, webhook and delivery history. Integrations are unrelated to Miniapps.</li>
+</ul>
+<p>Message and webhook contracts reproduce the structure of Meta's Cloud API, renaming only domain terms. Anyone already integrated with the WhatsApp Business Platform can adapt by changing URLs, credentials and a few field names.</p>
+</section>
+
+<section>
+<h2 id="§context"><span class="n">02</span>Context: how it works today</h2>
+<p>Based on the current documentation (Apifox, <em>Authentication</em> module) and the Open Platform (<code>open.phiz.chat</code>).</p>
+<h3>Current authentication</h3>
+<p>The token is obtained at <code>POST /gateway/openapi/auth</code> with <code>app_id</code>, <code>app_secret</code>, <code>description</code> (required) and <code>grant_type: "user_credentials"</code>. The response carries an access token valid for about 2 hours and a refresh token valid for about 90 days, renewed at <code>POST /gateway/openapi/token/refresh</code>.</p>
+{CODE:legacy_auth}
+<h3>Where credentials live</h3>
+<p>In the Open Platform, every channel has a <em>Channel › Development Settings</em> page with an <strong>AppID</strong> and an <strong>AppSecret</strong>. The secret is never displayed and can only be <em>reset</em>. Under <em>AI Robot</em>, the channel also offers the <strong>“Phiz Business API”</strong> reply mode, which routes the channel's conversations to the Business Message API for sending and webhook callbacks.</p>
+<p>At merchant level there is already a <strong>Merchant ID</strong> (UUID) and <em>Team management</em> with roles, members and an operation log. These three pieces are the foundation of the new area.</p>
+<h3>What this RFC changes</h3>
+<p>Each row shows how things work today, why that is a problem, what this proposal puts in its place, and a concrete use case.</p>
+<div class="tbl changes"><table><thead><tr><th>Today</th><th>Why it is a problem</th><th>With this RFC</th><th>Use case</th></tr></thead><tbody><tr><td>To reach a user through the API, the merchant needs a channel.</td><td>Merchants without a channel, or that want to speak as the business itself, cannot send a direct message to the user.</td><td>The merchant sends a direct message as itself. Using a channel becomes optional.</td><td>A pharmacy with no channel tells its customer Maria, by her phone number, that her order is ready for pickup. The message arrives in a direct conversation with the pharmacy.</td></tr><tr><td>Each channel has its own AppID and secret.</td><td>A merchant with 5 channels manages 5 credentials, and Blip needs one token per channel.</td><td>One credential per integration, owned by the merchant account, with access to direct sending and the chosen channels.</td><td>Loja Exemplo has 3 channels and uses Blip. Today it registers 3 AppIDs in Blip; with this RFC it creates one “Blip” integration and ticks direct sending and the 3 channels.</td></tr><tr><td>“Reset” invalidates the secret immediately.</td><td>The integration stays down until someone updates the secret in the external system.</td><td>Two valid secrets at the same time: the new one goes live and the old one keeps working for a period (default 24 h).</td><td>The Salesforce secret showed up in a log. The team generates a new one, updates Salesforce in the afternoon and revokes the old one at the end of the day, without losing a single message.</td></tr><tr><td>Login uses <code>grant_type: user_credentials</code> and requires a <code>description</code> field.</td><td>Tools that already speak OAuth, such as Salesforce, cannot connect without custom code.</td><td>Standard OAuth 2.0 (<code>client_credentials</code>), which those tools support out of the box.</td><td>The Salesforce admin connects PHIZ in Named Credentials by filling in only the token URL, client_id and secret, with no developer involved.</td></tr><tr><td>There is a refresh token valid for about 90 days.</td><td>It is one more long-lived secret to store, with no benefit in a server-to-server integration.</td><td>1-hour token with no refresh token; when it expires, the system requests a new one.</td><td>Blip renews the token on its own every hour with the same client_id and secret. There is no refresh token that can expire over a weekend and take customer service down.</td></tr><tr><td>There is no screen for webhooks, logs or multiple integrations.</td><td>The merchant cannot set up the webhook or find out alone why an integration stopped.</td><td>A Developer area with separate integrations, webhook, delivery history and logs.</td><td>Customer replies stop arriving in Blip. The merchant opens the delivery history, sees the webhook has returned HTTP 500 since 10 a.m. and, after the fix, replays the events.</td></tr></tbody></table></div>
+
+</section>
+
+<section>
+<h2 id="§goals"><span class="n">03</span>Goals and non-goals</h2>
+<h4>Goals</h4>
+<ul>
+  <li>Credentials tied to the <strong>merchant account</strong> instead of each channel. The merchant creates one <strong>integration</strong> per external system (for example, one for Blip and another for Salesforce). Each integration gets its own <code>client_id</code> and secret, and the merchant decides what it can do (send messages, check statuses, set up the webhook) and which senders it can speak through: the merchant itself and, if the merchant wants, its channels.</li>
+  <li>Standard OAuth 2.0 (client credentials), compatible with common libraries and platforms.</li>
+  <li>Send messages to a <strong>phone number or PHIZ ID</strong> and receive replies and statuses through a <strong>signed webhook</strong>.</li>
+  <li>Structural compatibility with Meta's Cloud API so existing integrations migrate with little code.</li>
+  <li>Publish the API specification in OpenAPI 3.1 format (the Swagger standard). It is a file that describes every route, field, response and webhook, and works as the agreement between the team that builds the API and those who integrate with it. With it, partners generate documentation and code and can test before delivery.</li>
+</ul>
+<h4>Out of scope for this RFC</h4>
+<ul>
+  <li>Templates, campaigns and segmentation (Marketing API, later phases).</li>
+  <li>Per-conversation pricing and billing.</li>
+  <li>Groups, voice and video calls.</li>
+  <li>Official SDKs (may come later, generated from the OpenAPI spec).</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§model"><span class="n">04</span>Domain model</h2>
+<p>The merchant account becomes the root of everything. The merchant talks to the PhizChat user in <strong>two ways</strong>:</p>
+<ul>
+  <li><strong>Direct message (default).</strong> The merchant sends as itself, with the name and photo from <em>Merchant information</em>. No channel needed.</li>
+  <li><strong>Through a channel (optional).</strong> Merchants that have channels can send through them, for example to separate brands or departments.</li>
+</ul>
+<p>Integrations belong to the merchant and receive permission to use either way or both.</p>
+<div class="diagram"><pre class="mermaid">
+flowchart LR
+  M["Merchant account<br/>merchant_id"] --> I["Integrations<br/>Blip · Salesforce · own system<br/>client_id + secret each"]
+  I -- "POST /v1/{sender_id}/messages" --> API["PHIZ Business API"]
+  API -- "Way 1 · default<br/>sender_id = merchant_id" --> D["Direct message<br/>from the merchant"]
+  API -. "Way 2 · optional<br/>sender_id = channel ID" .-> C["Message through<br/>the merchant's channel"]
+  D --> U(("PhizChat user<br/>phone or PHIZ ID"))
+  C --> U
+  API -- "webhook: replies and statuses" --> I
+</pre></div>
+<p class="cap">Both ways use the same route and format; only the <code>sender_id</code> changes. Way 2 exists only for merchants that have a channel.</p>
+<h3>End-to-end flow</h3>
+<p>View for the engineering team: where a message travels from the business to the user, and how replies and statuses come back.</p>
+<div class="diagram"><pre class="mermaid">
+flowchart LR
+  PP["PicPay"] --> B1["BSP<br/>e.g. Blip"]
+  AM["Ambar"] --> B2["BSP<br/>e.g. Salesforce"]
+  B1 --> API["PHIZ Business API<br/>/gateway/business<br/>Auth · Messages · Webhooks"]
+  B2 --> API
+  API -- "1–3 · token, send and<br/>sender validation" --> MA
+  subgraph OP["Open Platform"]
+    MA["Merchant Account"]
+    MA -- "4a · sender_id = merchant_id<br/>default" --> DM["Direct Message"]
+    MA -. "4b · sender_id = channel ID<br/>optional" .-> CH["Channel"]
+    CH --> CM["Channel Message"]
+  end
+  DM -- "5 · deliver" --> APP["Phiz App"]
+  CM -- "5 · deliver" --> APP
+  APP --> U(("User"))
+</pre></div>
+<p class="cap">Outbound: from the business to the user. The dashed line is the optional channel path.</p>
+<h4>Return: replies and statuses</h4>
+<div class="diagram"><pre class="mermaid">
+flowchart LR
+  U(("User")) -- "replies, receives, reads" --> APP["Phiz App"]
+  APP -- "6 · events" --> WH["PHIZ Business API<br/>Webhooks"]
+  WH -- "signed webhook" --> BSP["BSP of the integration<br/>that owns the sender"]
+  BSP --> EMP["Business"]
+</pre></div>
+<p class="cap">Inbound: user replies and message statuses reach the BSP through the webhook.</p>
+<ol>
+  <li><strong>Integration.</strong> The business (for example PicPay or Ambar) uses a BSP for customer service. In the Developer area, the merchant creates an integration for that BSP and hands over the <code>client_id</code> and secret.</li>
+  <li><strong>Token.</strong> The BSP calls <code>/oauth/token</code>. Auth checks the integration in the Merchant Account (secret, scopes and allowed senders) and returns a 1-hour JWT.</li>
+  <li><strong>Send.</strong> The BSP calls <code>POST /v1/{sender_id}/messages</code>. The API validates the token, scope, sender, opt-in policy and <code>Idempotency-Key</code>, answers <code>202</code> and queues the message.</li>
+  <li><strong>Routing.</strong> With <code>sender_id = merchant_id</code> the message goes out as a Direct Message (default). With a channel ID it goes out as a Channel Message (optional).</li>
+  <li><strong>Delivery.</strong> The Phiz App shows the message to the user and downloads media straight from the given link.</li>
+  <li><strong>Return.</strong> User replies and statuses (<code>sent</code>, <code>delivered</code>, <code>read</code>, <code>failed</code>) become events that the Webhooks service delivers, signed, to the integration that owns the sender.</li>
+</ol>
+<div class="tbl"><table><thead><tr><th>Component</th><th>Responsibility</th><th>Status</th></tr></thead><tbody><tr><td>BSP / business system</td><td>Calls the API, hosts media by link and receives the webhook.</td><td>External</td></tr><tr><td>PHIZ Business API · Auth</td><td>Issues and revokes JWTs; validates <code>client_id</code> and secret.</td><td>New</td></tr><tr><td>PHIZ Business API · Messages</td><td>Validates and accepts sends (<code>202</code>), applies idempotency and limits, queues and routes by <code>sender_id</code>.</td><td>New</td></tr><tr><td>PHIZ Business API · Webhooks</td><td>Consumes app events, signs and delivers them with retries; keeps 72 h of delivery history.</td><td>New</td></tr><tr><td>Open Platform · Merchant Account</td><td>Stores integrations, secrets (hashed), scopes, allowed senders and webhook settings. Hosts the Developer area.</td><td>Changed: credentials move from the channel to the merchant</td></tr><tr><td>Direct Message</td><td>Direct conversation between merchant and user in the app.</td><td>New (see Q3)</td></tr><tr><td>Channel / Channel Message</td><td>Sending through the merchant's channel.</td><td>Existing</td></tr><tr><td>Phiz App</td><td>Shows messages, downloads media by link and emits delivery, read and reply events.</td><td>Changed</td></tr></tbody></table></div>
+<h3>Mapping to Meta's Cloud API</h3>
+<div class="tbl"><table><thead><tr><th>Meta (WhatsApp Cloud API)</th><th>PHIZ (this proposal)</th></tr></thead><tbody>
+<tr><td>WhatsApp Business Account (WABA)</td><td>Merchant account · <code>merchant_id</code></td></tr>
+<tr><td>Business phone number · <code>phone_number_id</code></td><td>Sender · <code>sender_id</code>: the merchant itself (default, equal to <code>merchant_id</code>) or, optionally, a channel (equal to the channel ID)</td></tr>
+<tr><td>Meta app + System User token</td><td>Developer app + OAuth client credentials</td></tr>
+<tr><td><code>wa_id</code></td><td><code>phiz_id</code></td></tr>
+<tr><td><code>POST /{phone-number-id}/messages</code></td><td><code>POST /v1/{sender_id}/messages</code></td></tr>
+<tr><td><code>object: whatsapp_business_account</code></td><td><code>object: phiz_merchant_account</code></td></tr>
+<tr><td><code>X-Hub-Signature-256</code></td><td><code>X-Phiz-Signature-256</code> + <code>X-Phiz-Timestamp</code></td></tr>
+<tr><td><code>hub.mode</code> / <code>hub.verify_token</code> / <code>hub.challenge</code></td><td>Unchanged</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2 id="§principles"><span class="n">05</span>Design principles</h2>
+<ul>
+  <li><strong>Same shape as the Cloud API.</strong> Send bodies, responses and webhooks follow Meta's structure. We diverge only for a clear gain in security (timestamp in the signature) or clarity (<code>to_type</code>).</li>
+  <li>HTTP status codes, a single error envelope and a <code>trace_id</code> in every error response.</li>
+  <li>Sending is asynchronous and returns <code>202 Accepted</code>; the outcome arrives by webhook.</li>
+  <li><strong>Idempotency.</strong> The <code>Idempotency-Key</code> header prevents duplicate messages when a client retries.</li>
+  <li><strong>Least privilege.</strong> Each integration has scopes and a list of allowed senders.</li>
+  <li>Versioning <code>/v1</code>. Compatible changes (new fields) ship in a standardized way; breaking changes require <code>/v2</code>.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§auth"><span class="n">06</span>Authentication</h2>
+<p>We use the OAuth 2.0 <strong>client credentials</strong> flow (RFC 6749 §4.4). The app exchanges <code>client_id</code> and <code>client_secret</code> for a 1-hour access token and sends it as <code>Authorization: Bearer</code> on every call. There is no refresh token: when the token expires, the app requests a new one.</p>
+<div class="eps">
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/oauth/token</code><span class="d">Issues an access token</span></div>
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/oauth/revoke</code><span class="d">Revokes a token (RFC 7009)</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/me</code><span class="d">Shows the token's integration, merchant, scopes and senders</span></div>
+</div>
+<div class="diagram"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant S as External system
+  participant A as PHIZ Auth
+  participant API as PHIZ API
+  S->>A: POST /oauth/token (client_id, client_secret)
+  A-->>S: 200 access_token (1 h), scopes
+  S->>API: POST /v1/{sender_id}/messages · Bearer token
+  API-->>S: 202 Accepted
+</pre></div>
+<p class="cap">Close to expiry, the system requests a new token. There is no refresh token.</p>
+<h3>Request and response</h3>
+{CODE:token_curl}
+{CODE:token_resp}
+<p>The <code>/oauth/*</code> endpoints use the OAuth error format (RFC 6749 §5.2), which client libraries already understand:</p>
+{CODE:token_err}
+<h3>Token format</h3>
+<p>Decision: the token is a JWT signed with ES256, keys published at <code>/.well-known/jwks.json</code>. The gateway validates tokens locally without a database lookup per call. Revoked tokens and rotated secrets go into a short-lived deny list (until the token's expiry). For integrators the token is opaque; the content below is informative.</p>
+{CODE:jwt_claims}
+<h3>Scopes</h3>
+<div class="tbl"><table><thead><tr><th>Scope</th><th>Allows</th></tr></thead><tbody>
+<tr><td><code>messages:send</code></td><td>Send messages and mark them as read</td></tr>
+<tr><td><code>messages:read</code></td><td>Query message status</td></tr>
+<tr><td><code>webhooks:manage</code></td><td>Set up, test and replay the app's own webhook</td></tr>
+<tr><td><code>account:read</code></td><td>Read merchant account and sender data</td></tr>
+<tr><td><code>templates:manage</code></td><td>Reserved for the Marketing API</td></tr>
+</tbody></table></div>
+<h3>Secrets and rotation</h3>
+<ul>
+  <li>Secrets carry an environment prefix (<code>phzsk_live_</code>, <code>phzsk_test_</code>) so leak scanners can recognise them.</li>
+  <li>A secret is shown <strong>only once</strong>, at creation or rotation, and stored only as a hash (Argon2id).</li>
+  <li>Each app can have <strong>up to two active secrets</strong>. When a new one is generated, the previous one stays valid for a chosen period (default 24 h, from 0 to 7 days), so the switch causes no downtime.</li>
+  <li>The screen shows when each secret was last used, so you know whether the old one is still in use before revoking it.</li>
+  <li>Optional: an IP allowlist per app.</li>
+</ul>
+<h3>Current vs proposed</h3>
+<div class="tbl"><table><thead><tr><th>Aspect</th><th>Today</th><th>Proposal</th></tr></thead><tbody>
+<tr><td>Credential owner</td><td>Channel</td><td>Merchant account (through an app)</td></tr>
+<tr><td>Flow</td><td><code>user_credentials</code> (custom)</td><td><code>client_credentials</code> (RFC 6749)</td></tr>
+<tr><td>Extra required fields</td><td><code>description</code></td><td>None</td></tr>
+<tr><td>Lifetime</td><td>~2 h + ~90-day refresh token</td><td>1 h, no refresh token</td></tr>
+<tr><td>Scopes</td><td><code>channel</code></td><td>Per capability + allowed senders</td></tr>
+<tr><td>Rotation</td><td>Reset invalidates immediately</td><td>Two active secrets with overlap</td></tr>
+<tr><td>Errors</td><td>HTTP 200 + <code>code</code> in the body</td><td>Real HTTP status + standard envelope</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2 id="§messages"><span class="n">07</span>Sending messages</h2>
+<div class="eps">
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/v1/{sender_id}/messages</code><span class="d">Sends a message or marks one as read</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/messages/{message_id}</code><span class="d">Latest known status (fallback)</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/merchants/{merchant_id}/senders</code><span class="d">Senders (merchant and channels) the integration may use</span></div>
+</div>
+<h3>Sender: the merchant or a channel</h3>
+<p>The <code>sender_id</code> in the path defines on whose behalf the message is sent:</p>
+<ul>
+  <li><strong>The merchant itself (default).</strong> Use the <code>merchant_id</code>. The user sees the message in a <strong>Business Account</strong> conversation, directly with the business, and the merchant does not need any channel.</li>
+  <li><strong>A channel (optional).</strong> Use the channel ID, for example <code>1231</code>. Useful for merchants that separate brands or departments into different channels. The message appears in the channel's <strong>Channel Service</strong> conversation, the same one Channel Bot uses.</li>
+</ul>
+<p>Both work the same way in the API: same fields, same responses and same webhooks. In webhooks, <code>metadata.sender_type</code> shows which one was used and <code>metadata.conversation_type</code> carries the conversation type (<code>business_account</code> or <code>channel_service</code>).</p>
+<h3>Recipient: phone number or PHIZ ID</h3>
+<p>The <code>to</code> field holds the recipient and <code>to_type</code> says how to read it:</p>
+<ul>
+  <li><code>phone</code> (default): an E.164 phone number such as <code>+5511987654321</code>. PHIZ resolves the number to the user's account.</li>
+  <li><code>phiz_id</code>: the user's PHIZ ID, such as <code>839201447</code>. This is the identifier webhooks carry, so replies can use it directly.</li>
+</ul>
+<p>If the phone number does not belong to a PHIZ account, or the user has blocked the sender, the API still answers <code>202</code> and the webhook reports <code>failed</code> with error <code>2104</code>. This keeps the API from being used to find out which numbers have a PHIZ account.</p>
+<h3>Example: text to a phone number</h3>
+{CODE:send_curl}
+{CODE:send_resp}
+<p><code>contacts[].phiz_id</code> is filled only if the user has already talked to this sender. <code>messages[].id</code> is the key to match status webhooks.</p>
+<h3>More examples</h3>
+<h4>The same send, through a channel</h4>
+{CODE:send_curl_channel}
+<h4>Text to a PHIZ ID</h4>
+{CODE:send_phiz_id}
+<h4>Audio by link</h4>
+{CODE:send_audio}
+<h4>Video by link, to a PHIZ ID</h4>
+{CODE:send_video}
+<h4>Document with a file name</h4>
+{CODE:send_document}
+<h4>Reply buttons</h4>
+{CODE:send_buttons}
+<h4>Mark an inbound message as read</h4>
+{CODE:mark_read}
+<h3>Supported types</h3>
+<div class="tbl"><table><thead><tr><th>type</th><th>Content</th><th>Phase</th></tr></thead><tbody>
+<tr><td><code>text</code></td><td>Up to 4,096 characters; optional <code>preview_url</code></td><td>MVP</td></tr>
+<tr><td><code>image</code></td><td>By HTTPS <code>link</code>; optional caption</td><td>MVP</td></tr><tr><td><code>audio</code></td><td>By HTTPS <code>link</code>; no caption</td><td>MVP</td></tr><tr><td><code>video</code></td><td>By HTTPS <code>link</code>; optional caption</td><td>MVP</td></tr><tr><td><code>document</code></td><td>By HTTPS <code>link</code>; optional caption and file name</td><td>MVP</td></tr>
+
+
+
+
+</tbody></table></div>
+<h3>Media formats and limits</h3>
+<p>Media is always sent by <code>link</code>: a public HTTPS URL hosted by the merchant or the partner. The messaging API <strong>does not process or store</strong> media; it only passes the link to the user's app, which downloads the file straight from that URL. The link must therefore stay reachable after sending, and the file must already be in a format and size the app accepts.</p>
+<div class="tbl"><table><thead><tr><th>Type</th><th>Accepted formats</th><th>Max size</th></tr></thead><tbody>
+<tr><td><code>image</code></td><td>JPEG, PNG, WebP</td><td>5 MB</td></tr>
+<tr><td><code>audio</code></td><td>AAC, MP3, M4A, OGG (Opus), AMR</td><td>16 MB</td></tr>
+<tr><td><code>video</code></td><td>MP4 (H.264 + AAC), 3GP</td><td>16 MB</td></tr>
+<tr><td><code>document</code></td><td>PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT, CSV</td><td>100 MB</td></tr>
+</tbody></table></div>
+<p class="cap">Formats and sizes the PHIZ app should accept, inspired by the Cloud API limits. Conversion and compression are up to whoever hosts the file. They must be confirmed with the team that owns media in the app (see Q8).</p>
+<h3>Sending policy</h3>
+<div class="note-box risk"><span class="lbl">To be defined by Product</span><p>Product needs to define an opt-in policy: under which conditions the merchant may start a conversation with the user, and how the user grants or withdraws permission to receive messages. See Q1.</p></div>
+<h3>Idempotency</h3>
+<p>Send an <code>Idempotency-Key</code> with every message. The same key within 24 h returns the original response without sending again. The same key with a different body returns <code>409</code>. This makes retries after a timeout or a <code>5xx</code> safe.</p>
+</section>
+
+<section>
+<h2 id="§webhooks"><span class="n">08</span>Webhooks</h2>
+<p>Each app has one webhook subscription with a URL, a <code>verify_token</code> and a list of events. It is configured in the Developer area or through the API.</p>
+<div class="eps">
+  <div class="ep"><span class="m m-put">PUT</span><code class="p">/v1/apps/{app_id}/webhook</code><span class="d">Sets URL, verify_token and events</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/apps/{app_id}/webhook</code><span class="d">Settings and health</span></div>
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/v1/apps/{app_id}/webhook/test</code><span class="d">Fires a signed test event</span></div>
+  <div class="ep"><span class="m m-get">GET</span><code class="p">/v1/apps/{app_id}/webhook/deliveries</code><span class="d">Delivery history (72 h)</span></div>
+  <div class="ep"><span class="m m-post">POST</span><code class="p">/v1/apps/{app_id}/webhook/deliveries/{id}/replay</code><span class="d">Replays a delivery</span></div>
+</div>
+{CODE:webhook_put}
+<h3>Events</h3>
+<div class="tbl"><table><thead><tr><th>field</th><th>When</th></tr></thead><tbody>
+<tr><td><code>messages</code></td><td>The user sent a message, tapped a button or reacted</td></tr>
+<tr><td><code>message_status</code></td><td>A sent message changed to <code>sent</code>, <code>delivered</code>, <code>read</code> or <code>failed</code></td></tr>
+<tr><td><code>sender_update</code></td><td>A sender's status, quality or limit changed (merchant or channel)</td></tr>
+<tr><td><code>account_update</code></td><td>The merchant account changed (verification, restriction)</td></tr>
+</tbody></table></div>
+<h3>URL verification</h3>
+<p>Before activating, PHIZ sends a <code>GET</code> to the URL with <code>hub.mode=subscribe</code>, <code>hub.verify_token</code> and <code>hub.challenge</code>. The server checks the token and answers 200 with the value of <code>hub.challenge</code>. It is the same handshake Meta uses.</p>
+<h3>Signature</h3>
+<p>Every <code>POST</code> carries the headers below. The signature is an HMAC-SHA256 of <code>{X-Phiz-Timestamp}.{raw body}</code> using the app's <strong>webhook secret</strong>, which is separate from the client secret. Reject events whose timestamp is more than 5 minutes off. While the webhook secret is being rotated, the header carries two comma-separated signatures.</p>
+{CODE:wh_headers}
+{CODE:wh_verify_node}
+{CODE:wh_verify_py}
+<h3>Inbound message</h3>
+{CODE:wh_inbound}
+<h3>Inbound message with media</h3>
+<p>When the user sends an image, audio, video or document, the event carries a temporary <code>url</code> pointing to the file in the current chat storage. The messaging API does not copy or keep the media; download the file while the link is valid. Below is the <code>messages[]</code> item of a voice message:</p>
+{CODE:wh_inbound_media}
+<h3>Status of a sent message</h3>
+{CODE:wh_status}
+{CODE:wh_failed}
+<div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> accepted: API returns 202
+  accepted --> sent: reached PHIZ servers
+  sent --> delivered: reached the device
+  delivered --> read: user opened it
+  accepted --> failed
+  sent --> failed
+  read --> [*]
+  failed --> [*]
+</pre></div>
+<p class="cap">Status lifecycle. <code>accepted</code> appears only in the API response and in <code>GET /v1/messages/{id}</code>; the others arrive by webhook.</p>
+<h3>Delivery guarantees</h3>
+<ul>
+  <li><strong>At least once.</strong> The same event may arrive more than once; use <code>X-Phiz-Delivery-Id</code> to drop duplicates.</li>
+  <li><strong>No ordering guarantee.</strong> A <code>read</code> may arrive before <code>delivered</code>; order by <code>timestamp</code> and never move a status backwards.</li>
+  <li><strong>Answer within 10 s</strong> with a 2xx and process afterwards. Any other response, or a timeout, counts as a failure.</li>
+  <li><strong>Retries</strong> with exponential backoff (10 s, 30 s, 1 min, 5 min, 15 min, 1 h, then hourly) for up to 24 h. After that the event stays available for manual replay for 72 h.</li>
+  <li>If the URL keeps failing for 24 h, the webhook moves to <code>failing</code> and the merchant's administrators are notified.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§errors"><span class="n">09</span>Errors, limits and versions</h2>
+<p>Outside <code>/oauth/*</code>, every error uses one envelope:</p>
+{CODE:error_env}
+<div class="tbl num"><table><thead><tr><th>code</th><th>HTTP</th><th>type</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>1001</td><td>400</td><td>invalid_request</td><td>Malformed JSON or missing required field</td></tr>
+<tr><td>1003</td><td>400</td><td>invalid_parameter</td><td>Invalid value (see <code>details</code>)</td></tr>
+<tr><td>1101</td><td>401</td><td>token_expired</td><td>Token expired; request a new one</td></tr>
+<tr><td>1102</td><td>401</td><td>invalid_token</td><td>Invalid or revoked token</td></tr>
+<tr><td>1201</td><td>403</td><td>insufficient_scope</td><td>The token lacks the required scope</td></tr>
+<tr><td>1202</td><td>403</td><td>sender_not_allowed</td><td>The integration is not allowed to use this sender</td></tr>
+<tr><td>1301</td><td>404</td><td>not_found</td><td>Resource does not exist or belongs to another merchant</td></tr>
+<tr><td>1401</td><td>409</td><td>idempotency_conflict</td><td>Same Idempotency-Key with a different body</td></tr>
+<tr><td>1501</td><td>429</td><td>rate_limited</td><td>Rate limit reached; honour <code>Retry-After</code></td></tr>
+<tr><td>2104</td><td>webhook</td><td>recipient_not_reachable</td><td>No PHIZ account for the number, or the user blocked the sender</td></tr>
+<tr><td>2201</td><td>422</td><td>policy_violation</td><td>Sending not allowed by the opt-in policy</td></tr>
+<tr><td>2202</td><td>422</td><td>unsupported_type</td><td>Message type not enabled for the sender</td></tr>
+<tr><td>2301</td><td>webhook</td><td>media_unavailable</td><td>The app could not download the media from <code>link</code> (URL down, expired or unsupported format)</td></tr>
+<tr><td>2401</td><td>403</td><td>sender_disabled</td><td>Sender disabled or restricted</td></tr>
+<tr><td>2501</td><td>429</td><td>messaging_limit_reached</td><td>The sender's daily recipient limit was reached</td></tr>
+<tr><td>5000</td><td>500</td><td>internal_error</td><td>Internal error; retry with the same Idempotency-Key</td></tr>
+</tbody></table></div>
+<h3>Limits (initial proposal)</h3>
+<div class="tbl"><table><thead><tr><th>Resource</th><th>Limit</th></tr></thead><tbody>
+<tr><td><code>/oauth/token</code></td><td>60 req/min per app</td></tr>
+<tr><td>Sending messages</td><td>80 msg/s per sender (adjustable by contract)</td></tr>
+<tr><td>Other endpoints</td><td>600 req/min per app</td></tr>
+<tr><td>Unique recipients of business-initiated messages</td><td>Per-sender tiers: 1k → 10k → 100k → unlimited in 24 h, based on quality (Phase 2)</td></tr>
+</tbody></table></div>
+{CODE:ratelimit}
+<h3>Environments</h3>
+<ul>
+  <li><strong>Production:</strong> <code>https://{gateway}/gateway/business</code></li>
+  <li><strong>Sandbox:</strong> <code>https://{test-gateway}/gateway/business</code>, in the test environment used today (Openapi-test), with one test sender per merchant and up to 5 registered recipients (like Meta's test number). <code>phzsk_test_</code> secrets only work here.</li>
+</ul>
+<h3>Route prefix</h3>
+<p>The new API runs on the same gateway as the current API, separated by prefix:</p>
+<ul>
+  <li><code>/gateway/openapi/…</code>: the current API, kept during the migration.</li>
+  <li><code>/gateway/business/…</code>: this API (authentication, messages and webhooks).</li>
+</ul>
+<p>With separate prefixes, each context has its own routing, authentication, limits and logs, and the legacy API can be shut down without affecting the new one. Every path in this document, such as <code>/oauth/token</code> and <code>/v1/{sender_id}/messages</code>, is relative to <code>https://{gateway}/gateway/business</code>. In the examples this address appears as <code>$PHIZ_API_BASE</code>.</p>
+</section>
+
+<section>
+<h2 id="§devarea"><span class="n">10</span>Developer area in the Open Platform</h2>
+<p>Developer settings move out of <em>Channel › Development Settings</em> into a merchant menu item, <strong>Developer</strong>, next to <em>Settings</em>. It reuses the existing Merchant ID, the roles from <em>Team management</em> and the <em>Operation log</em>.</p>
+<div class="mock" aria-label="Sketch of the credentials screen">
+  <div class="mock-top"><i></i><i></i><i></i><span>open.phiz.chat/developer/apps/app_2Fk81PzQ</span></div>
+  <div class="mock-body">
+    <nav class="mock-nav"><span class="grp">Developer</span><span>Overview</span><span class="on">Apps</span><span>Senders</span><span>API logs</span><span>Sandbox</span></nav>
+    <div class="mock-main">
+      <h6>Blip integration <span class="chip">Production</span></h6>
+      <dl class="kv">
+        <dt>Merchant ID</dt><dd><code>7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57</code></dd>
+        <dt>Client ID</dt><dd><code>app_2Fk81PzQ</code><span class="fakebtn">Copy</span></dd>
+        <dt>Client secret</dt><dd><code>phzsk_live_••••a91c</code><span class="chip">used 3 min ago</span><span class="fakebtn">Generate new secret</span></dd>
+        <dt>Previous secret</dt><dd><code>phzsk_live_••••77d0</code><span class="chip w">expires in 18 h</span><span class="fakebtn">Revoke now</span></dd>
+        <dt>Scopes</dt><dd><code>messages:send</code><code>messages:read</code><code>webhooks:manage</code></dd>
+        <dt>Allowed senders</dt><dd>Loja Exemplo (merchant) · Loja Exemplo - Ofertas <code>1231</code></dd>
+        <dt>Webhook</dt><dd><span class="chip">Verified</span><span class="fakebtn">Test</span><span class="fakebtn pri">View deliveries</span></dd>
+      </dl>
+    </div>
+  </div>
+</div>
+<p class="cap">Illustrative sketch of an app's page, with sample values.</p>
+<h3>Screens</h3>
+<div class="screens">
+  <div class="screen"><h5>Overview</h5><span class="path">/developer</span><ul><li>Messages sent, delivered and failed in the last 24 h</li><li>Webhook health</li><li>Alerts: old secret still in use, webhook failing</li></ul></div>
+  <div class="screen"><h5>Apps</h5><span class="path">/developer/apps</span><ul><li>Create app: name, integration type (own, Blip, Salesforce, other), environment</li><li>Scopes and allowed senders</li><li>Client ID, secrets with rotation and last use</li><li>IP allowlist (optional)</li><li>Disable or delete app</li></ul></div>
+  <div class="screen"><h5>App webhook</h5><span class="path">/developer/apps/:id/webhook</span><ul><li>URL, verify token and events</li><li>Webhook secret with rotation</li><li>Verify and send a test</li><li>Deliveries from the last 72 h with HTTP status, attempts, latency and replay</li></ul></div>
+  <div class="screen"><h5>Senders</h5><span class="path">/developer/senders</span><ul><li>The merchant itself, always present, plus channels if any</li><li>Each with <code>sender_id</code>, status, limit and quality</li><li>Picks the integration that receives each sender's conversations</li><li>For channels, turns on “Phiz Business API” mode</li></ul></div>
+  <div class="screen"><h5>API logs</h5><span class="path">/developer/logs</span><ul><li>Requests from the last 7 days: method, route, status, latency, <code>trace_id</code></li><li>Filter by app and error code</li></ul></div>
+  <div class="screen"><h5>Sandbox</h5><span class="path">/developer/sandbox</span><ul><li>Test sender</li><li>Up to 5 test recipients</li><li><code>phzsk_test_</code> credentials</li></ul></div>
+</div>
+<h3>Permissions</h3>
+<p>New permissions are added to the existing <em>Role management</em> screen. The Super administrator gets all of them.</p>
+<div class="tbl"><table><thead><tr><th>Permission</th><th>Allows</th></tr></thead><tbody>
+<tr><td><code>developer.view</code></td><td>View integrations, senders, logs and deliveries (no secrets)</td></tr>
+<tr><td><code>developer.apps.manage</code></td><td>Create, edit and disable integrations; set scopes and senders</td></tr>
+<tr><td><code>developer.secrets.manage</code></td><td>Generate, rotate and revoke secrets</td></tr>
+<tr><td><code>developer.webhooks.manage</code></td><td>Set up the webhook, test it and replay deliveries</td></tr>
+</tbody></table></div>
+<p>Creating, rotating or revoking a secret, changing scopes and editing the webhook all add an entry to the <em>Operation log</em> and email the administrators.</p>
+<h3>A sender with more than one integration</h3>
+<p>To keep two systems from answering the same user, each sender (the merchant or a channel) has <strong>one owning integration</strong> for conversations, chosen on the <em>Senders</em> screen. Only that integration receives the sender's <code>messages</code> event. Any integration with permission can send through it and receives <code>message_status</code> for the messages it sent. A conversation handover protocol between integrations (like Messenger's handover) is left for later.</p>
+<h3>Migrating channel credentials</h3>
+<ol>
+  <li><strong>Automatic creation.</strong> For each channel with an AppID we create a “Legacy – channel name” app in the merchant, reusing the AppID as <code>client_id</code>, the stored secret, and permission for that channel only. No integration breaks.</li>
+  <li><strong>Coexistence.</strong> <code>/gateway/openapi/auth</code> and <code>/token/refresh</code> keep working. The channel page shows a notice pointing to the new area.</li>
+  <li><strong>Read only.</strong> After 3 months the channel page no longer allows resetting the secret; management happens only in the new area.</li>
+  <li><strong>Shutdown.</strong> After 6 months, and once measured usage is near zero, the old endpoints answer <code>410 Gone</code>.</li>
+</ol>
+</section>
+
+<section>
+<h2 id="§partners"><span class="n">11</span>Partner integrations</h2>
+<p><strong>In the MVP</strong>, the merchant creates an app in the Developer area and pastes the <code>client_id</code> and secret into Blip, Salesforce or their own system. Webhook URLs come from the partner. Because the contracts follow the Cloud API, partners that already have a WhatsApp connector can reuse most of it.</p>
+<p><strong>In a later phase</strong> we create a <em>technology partner</em> program, equivalent to Meta's Embedded Signup:</p>
+<ul>
+  <li>The partner registers a platform app with PHIZ.</li>
+  <li>The merchant clicks “Connect with PHIZ” inside the partner's product and grants scopes and senders on a consent screen (OAuth 2.0 authorization code + PKCE).</li>
+  <li>The partner receives tokens limited to that merchant and a single webhook for all its customers. The envelope's <code>entry[].id</code> identifies the merchant, which is why the envelope has that structure from day one.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§marketing"><span class="n">12</span>Path to the Marketing API</h2>
+<p>This RFC reserves the space the Marketing API will occupy, without implementing it:</p>
+<ul>
+  <li><code>type: template</code> for sending and the <code>templates:manage</code> scope already exist in the contract.</li>
+  <li>Templates with approval: <code>/v1/merchants/{merchant_id}/message_templates</code> and a <code>template_status</code> webhook event.</li>
+  <li>Conversation categories (<code>conversation.origin.type</code>: <code>service</code>, <code>utility</code>, <code>marketing</code>), the basis for reporting and pricing.</li>
+  <li>Per-sender opt-in and opt-out management, campaigns to segments and metrics at <code>/v1/merchants/{merchant_id}/analytics</code>.</li>
+  <li>Messaging limit tiers and a quality rating per sender, already present in the <code>Sender</code> resource.</li>
+</ul>
+</section>
+
+<section>
+<h2 id="§plan"><span class="n">13</span>Delivery plan</h2>
+<div class="phases">
+  <div class="phase first"><span class="tag">PHASE 1 · MVP</span><h5>Authenticate and send</h5><ul><li><code>/oauth/token</code>, <code>/oauth/revoke</code>, <code>/v1/me</code></li><li>Send <code>text</code>, <code>image</code>, <code>audio</code>, <code>video</code> and <code>document</code> to phone and PHIZ ID</li><li>Signed <code>messages</code> and <code>message_status</code> webhooks</li><li>Developer area: apps, secrets, webhook</li><li>Default sender (the merchant itself) for everyone; channels as optional senders</li><li>Automatic migration of channel credentials</li></ul></div>
+</div>
+<p>Dates will be set after this RFC is reviewed with the China team.</p>
+</section>
+
+<section>
+<h2 id="§questions"><span class="n">14</span>Open questions</h2>
+<ol class="qs">
+  <li><strong>Opt-in policy.</strong> Product needs to define under which conditions the merchant may start a conversation (for example a customer-service window, explicit authorization or a prior relationship with the merchant) and how the user grants or withdraws permission. The rule applies to Business Account and Channel Service.</li>
+  <li><strong>Sender IDs.</strong> Use the <code>merchant_id</code> and the channel ID directly as <code>sender_id</code>, or create new opaque IDs? Reusing existing IDs simplifies migration, but exposes the channel's sequential ID.</li>
+  <li><strong>Business Account conversation type.</strong> Confirm the path Public Accounts › Service › Business Account and its definition: a two-way service conversation for businesses, merchants, governments and institutions, allowing user messages and a configurable Menu, with proactive messages subject to authorization and messaging rules. Does this type already exist in the app or does it need to be built? How does the user block or mute a Business Account?</li>
+  <li><strong>Current conversation types.</strong> Review the hierarchy and the permissions table (v1.2): which types exist today, which current rules differ, which types do not exist and which are missing.</li>
+  <li><strong>Phone numbers.</strong> Do all PHIZ users have a verified phone number? How do we handle foreign numbers and number changes?</li>
+  <li><strong>Is one owning integration per sender enough</strong>, or do we need conversation handover between apps (bot → human agent) already in Phase 2?</li>
+  <li><strong>Existing Business Message API.</strong> The AI Robot's “Phiz Business API” mode already has send and callback endpoints and seems to match Channel Service with Channel Bot. Does this RFC replace, extend or wrap that API?</li>
+  <li><strong>Media by link.</strong> Does the PHIZ app play every format in the media table, and which sizes does it accept? Does the app download straight from the merchant's URL (which exposes the user's IP to that server) or through a PHIZ proxy that stores nothing? Should we check the link before accepting the send (for example, type and size without downloading the file)? How long does the <code>url</code> of received media stay valid?</li>
+</ol>
+</section>
+
+<section>
+<h2 id="§openapi"><span class="n">15</span>OpenAPI reference</h2>
+<p>The OpenAPI 3.1 specification below covers every endpoint and webhook in this RFC, with descriptions in this language. “Try it out” is turned off because the API does not exist yet. Use “Copy OpenAPI” to take the YAML into Apifox, Postman or an SDK generator.</p>
+</section>

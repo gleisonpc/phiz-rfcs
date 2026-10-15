@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Builds the static site into dist/.
+
+  rfcs/<ID>/rfc.json     metadata (status, authors, reviewers, titles, summaries)
+  rfcs/<ID>/source.html  the RFC page (h2 sections need an id)
+  rfcs/<ID>/*            other files (OpenAPI YAMLs, images) are copied as is
+Folders that start with "_" (e.g. _template) are ignored.
+"""
+import html, json, re, shutil, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+DIST = ROOT / "dist"
+CFG = json.loads((ROOT / "site.config.json").read_text(encoding="utf-8"))
+
+STATUS = {
+    "draft":       {"pt": "Rascunho",     "en": "Draft",       "zh": "草稿"},
+    "in-review":   {"pt": "Em revisão",   "en": "In review",   "zh": "评审中"},
+    "approved":    {"pt": "Aprovada",     "en": "Approved",    "zh": "已批准"},
+    "implemented": {"pt": "Implementada", "en": "Implemented", "zh": "已实现"},
+    "rejected":    {"pt": "Rejeitada",    "en": "Rejected",    "zh": "已拒绝"},
+    "superseded":  {"pt": "Substituída",  "en": "Superseded",  "zh": "已被取代"},
+}
+LANGS = ("pt", "en", "zh")
+e = html.escape
+
+
+def spans(d, cls=""):
+    return "".join(f'<span data-l="{l}"{f" class={chr(34)}{cls}{chr(34)}" if cls else ""}>{e(d[l])}</span>' for l in LANGS)
+
+
+def load():
+    out = []
+    for d in sorted((ROOT / "rfcs").iterdir()):
+        if not d.is_dir() or d.name.startswith("_"):
+            continue
+        meta = json.loads((d / "rfc.json").read_text(encoding="utf-8"))
+        if meta["status"] not in STATUS:
+            sys.exit(f"{d.name}: invalid status {meta['status']!r}; use one of {', '.join(STATUS)}")
+        if not (d / "source.html").exists():
+            sys.exit(f"{d.name}: source.html missing")
+        out.append((d, meta))
+    return out
+
+
+def build_rfc(d, meta):
+    dest = DIST / "rfcs" / d.name
+    shutil.copytree(d, dest, ignore=shutil.ignore_patterns("source.html"))
+    page = (d / "source.html").read_text(encoding="utf-8")
+    if not page.lstrip().lower().startswith("<!doctype"):
+        # the source is a fragment (the Artifact viewer adds the skeleton); hosted pages need their own
+        head = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n'
+                '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n')
+        marker = re.search(r"<header|<body|<main|<h1", page)
+        i = marker.start() if marker else len(page)
+        page = head + page[:i] + "\n</head>\n<body>\n" + page[i:] + "\n</body>\n</html>\n"
+    st = meta["status"]
+    page = page.replace('<span class="rfcno">', '<a class="back" href="../../">← RFCs</a><span class="rfcno">', 1)
+    badge = (f'<span class="rfcno st" data-st="{st}">'
+             + "".join(f'<span class="lang-st" data-l="{l}">{e(STATUS[st][l])}</span>' for l in LANGS) + "</span>")
+    page = re.sub(r'(<span class="rfcno">[^<]*</span>)', r"\1" + badge, page, count=1)
+    page = page.replace("</title>", "</title>\n<link rel=\"stylesheet\" href=\"../../assets/rfc-site.css\">", 1)
+    cfg = {"repo": CFG["repo"], "giscus": CFG["giscus"]}
+    inject = (f'<script>window.PHIZ_SITE={json.dumps(cfg)};window.PHIZ_RFC_ID={json.dumps(meta["id"])};</script>\n'
+              '<script src="../../assets/mermaid.min.js"></script>\n<script src="../../assets/rfc-site.js"></script>\n</body>')
+    page = page.replace("</body>", inject, 1) if "</body>" in page else page + inject
+    (dest / "index.html").write_text(page, encoding="utf-8")
+
+
+INDEX_CSS = """
+:root{--bg:#f6f5f3;--surface:#fff;--ink:#1c1a18;--muted:#6b645d;--line:#e4dfda;--accent:#ef5f17;--accent-ink:#b5430a;--accent-soft:#fde9dd;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141312;--surface:#1c1a19;--ink:#ede8e3;--muted:#a39b93;--line:#302c29;--accent:#ff7733;--accent-ink:#ff9b66;--accent-soft:#3a2316}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.6 "IBM Plex Sans",system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--line)}header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:.85rem}
+.langs{display:inline-flex;border:1px solid var(--line);border-radius:9px;padding:3px;background:var(--surface);gap:2px}
+.langs button{font:600 .78rem inherit;font-family:inherit;border:0;background:transparent;color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer}
+.langs button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+h1{font:800 clamp(1.8rem,5vw,2.6rem)/1.1 "Schibsted Grotesk",system-ui,sans-serif;letter-spacing:-.02em;margin:40px 0 8px}
+.lead{color:var(--muted);margin:0 0 24px;max-width:60ch}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.filters button{font:500 .82rem inherit;font-family:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 13px;cursor:pointer}
+.filters button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.list{display:grid;gap:12px;padding:0;margin:0 0 60px;list-style:none}
+.card{display:block;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:16px 18px;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--accent)}.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.id{font:600 .78rem "JetBrains Mono",ui-monospace,monospace;color:var(--muted)}
+.badge{font:600 .7rem inherit;font-family:inherit;text-transform:uppercase;letter-spacing:.05em;border-radius:999px;padding:2px 10px;border:1px solid var(--line)}
+[data-st=draft]{color:var(--muted)}[data-st=in-review]{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+[data-st=approved]{background:#dff3e4;color:#17692f;border-color:transparent}[data-st=implemented]{background:#dbeafe;color:#1d4ed8;border-color:transparent}
+[data-st=rejected]{background:#fde2e2;color:#a61b1b;border-color:transparent}[data-st=superseded]{color:var(--muted);text-decoration:line-through}
+@media (prefers-color-scheme:dark){[data-st=approved]{background:#16341f;color:#7ddc97}[data-st=implemented]{background:#172a4d;color:#8ab4ff}[data-st=rejected]{background:#3d1818;color:#ff9a9a}}
+.card h2{font:700 1.15rem/1.3 "Schibsted Grotesk",system-ui,sans-serif;margin:0 0 4px}.card p{margin:0 0 8px;color:var(--muted);font-size:.93rem}
+.meta{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+[data-l]{display:none}html[data-lang=pt] [data-l=pt],html[data-lang=en] [data-l=en],html[data-lang=zh] [data-l=zh]{display:inline}
+html[data-lang=pt] .card p [data-l=pt],html[data-lang=en] .card p [data-l=en],html[data-lang=zh] .card p [data-l=zh]{display:inline}
+.empty{color:var(--muted)}
+"""
+
+INDEX_JS = """
+(function(){var L=["pt","en","zh"];function g(){try{var s=localStorage.getItem("phiz-rfc-lang");if(L.indexOf(s)>-1)return s}catch(e){}var n=(navigator.language||"pt").slice(0,2);return L.indexOf(n)>-1?n:"pt"}
+function set(l){document.documentElement.dataset.lang=l;document.documentElement.lang={pt:"pt-BR",en:"en",zh:"zh-CN"}[l];try{localStorage.setItem("phiz-rfc-lang",l)}catch(e){}
+document.querySelectorAll("[data-set-lang]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.setLang===l))})}
+document.querySelectorAll("[data-set-lang]").forEach(function(b){b.onclick=function(){set(b.dataset.setLang)}});set(g());
+var f=document.querySelectorAll("[data-filter]"),cards=document.querySelectorAll(".card-li");
+f.forEach(function(b){b.onclick=function(){f.forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});
+cards.forEach(function(c){c.hidden=b.dataset.filter!=="all"&&c.dataset.status!==b.dataset.filter})}})})();
+"""
+
+
+def build_index(items):
+    items = sorted(items, key=lambda x: x[1]["id"], reverse=True)
+    lis = []
+    for d, m in items:
+        st = m["status"]
+        authors = ", ".join(m.get("authors", [])) or "—"
+        revs = ", ".join(m.get("reviewers", [])) or "—"
+        lis.append(f'''<li class="card-li" data-status="{st}"><a class="card" href="rfcs/{e(d.name)}/">
+<div class="top"><span class="id">{e(m["id"])}</span><span class="badge" data-st="{st}">{spans(STATUS[st])}</span></div>
+<h2>{spans(m["title"])}</h2><p>{spans(m["summary"])}</p>
+<div class="meta"><span>{e(authors)}</span><span>Reviewers: {e(revs)}</span><span>{e(m.get("updated", ""))}</span></div></a></li>''')
+    used = sorted({m["status"] for _, m in items}, key=list(STATUS).index)
+    fl = '<button type="button" data-filter="all" aria-pressed="true">' + spans({"pt": "Todas", "en": "All", "zh": "全部"}) + "</button>"
+    fl += "".join(f'<button type="button" data-filter="{s}" aria-pressed="false">{spans(STATUS[s])}</button>' for s in used)
+    title = e(CFG["title"])
+    return f'''<!doctype html><html lang="pt-BR" data-lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title><meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@600&display=swap">
+<style>{INDEX_CSS}</style></head><body>
+<header><div class="wrap"><div class="brand"><span class="logo" aria-hidden="true">P</span><span>PHIZ Open Platform</span></div>
+<div class="langs" role="group" aria-label="Language"><button type="button" data-set-lang="pt">PT-BR</button><button type="button" data-set-lang="en">EN-US</button><button type="button" data-set-lang="zh">中文</button></div></div></header>
+<main class="wrap"><h1>RFCs</h1>
+<p class="lead">{spans({"pt": "Propostas técnicas da plataforma, com status e comentários por seção.", "en": "Platform technical proposals, with status and per-section comments.", "zh": "平台技术提案，含状态与分节评论。"})}</p>
+<div class="filters" role="group">{fl}</div>
+<ul class="list">{"".join(lis)}</ul></main><script>{INDEX_JS}</script></body></html>'''
+
+
+def main():
+    if DIST.exists():
+        shutil.rmtree(DIST)
+    (DIST / "assets").mkdir(parents=True)
+    for f in (ROOT / "assets").iterdir():
+        shutil.copy(f, DIST / "assets" / f.name)
+    (DIST / ".nojekyll").write_text("")
+    items = load()
+    for d, m in items:
+        build_rfc(d, m)
+    (DIST / "index.html").write_text(build_index(items), encoding="utf-8")
+    print(f"built {len(items)} RFC(s) -> {DIST}")
+
+
+main()

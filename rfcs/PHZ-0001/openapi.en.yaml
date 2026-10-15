@@ -1,0 +1,1437 @@
+openapi: 3.1.0
+info:
+  title: PHIZ Business Messaging API
+  version: 1.0.0-draft
+  description: 'PHIZ business messaging API. It lets third-party systems (CRMs, customer-service platforms such
+    as Blip and Salesforce, or the merchant''s own systems) send messages to PHIZ users identified by **phone number**
+    or **PHIZ ID**, and receive replies and status changes through a **webhook**.
+
+
+    Message and webhook payloads closely follow Meta''s Cloud API (WhatsApp Business Platform) to keep the cost
+    of adapting existing integrations low.
+
+
+    **Status:** proposal (RFC PHZ-0001). Nothing here is implemented yet.'
+  contact:
+    name: PHIZ Open Platform
+    url: https://open.phiz.chat
+servers:
+- url: https://{gateway}/gateway/business
+  description: 'Production: current PHIZ gateway, /gateway/business prefix'
+  variables:
+    gateway:
+      default: gateway.phiz.chat
+      description: Production gateway host (illustrative value).
+- url: https://{gateway}/gateway/business
+  description: 'Sandbox: test gateway (Openapi-test), same prefix'
+  variables:
+    gateway:
+      default: gateway-test.phiz.chat
+      description: Test gateway host (illustrative value).
+tags:
+- name: Auth
+  description: OAuth 2.0 token issuance and revocation (client credentials).
+- name: Account
+  description: Merchant account, senders and developer apps.
+- name: Messages
+  description: Send messages to a phone number or PHIZ ID and query their status.
+- name: Webhooks
+  description: App webhook subscription setup and events delivered to your server.
+security:
+- bearerAuth: []
+paths:
+  /oauth/token:
+    post:
+      tags:
+      - Auth
+      summary: Get access token
+      description: 'Exchanges client_id and client_secret for a Bearer access token (OAuth 2.0, RFC 6749 §4.4).
+        There is no refresh token: when the token expires, request a new one. Accepts `application/x-www-form-urlencoded`
+        (OAuth standard) and `application/json`.'
+      operationId: getToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+            example:
+              grant_type: client_credentials
+              client_id: app_2Fk81PzQ
+              client_secret: phzsk_live_9c1f…
+              scope: messages:send messages:read
+      responses:
+        '200':
+          description: Token issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                access_token: eyJhbGciOiJFUzI1NiIs…
+                token_type: Bearer
+                expires_in: 3600
+                scope: messages:send messages:read
+                merchant_id: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        '400':
+          description: Invalid request (`invalid_request`, `invalid_scope`, `unsupported_grant_type`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+        '401':
+          description: Invalid credentials (`invalid_client`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+              example:
+                error: invalid_client
+                error_description: Client authentication failed.
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /oauth/revoke:
+    post:
+      tags:
+      - Auth
+      summary: Revoke token
+      description: Revokes an access token before it expires (RFC 7009). Always returns 200, even if the token was
+        already invalid.
+      operationId: revokeToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+              - token
+              - client_id
+              - client_secret
+              properties:
+                token:
+                  type: string
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /v1/me:
+    get:
+      tags:
+      - Auth
+      summary: Inspect current token
+      description: Returns the app, merchant, scopes and allowed senders of the token in use. Useful to debug integrations
+        (equivalent to Meta's debug_token).
+      operationId: getMe
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/merchants/{merchant_id}:
+    get:
+      tags:
+      - Account
+      summary: Get merchant account
+      description: Details of the merchant account that owns the app.
+      operationId: getMerchant
+      parameters:
+      - name: merchant_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        description: Merchant account ID.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Merchant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/merchants/{merchant_id}/senders:
+    get:
+      tags:
+      - Account
+      summary: List senders
+      description: 'Senders the integration may use: the merchant itself (always present) and, if any, the allowed
+        channels.'
+      operationId: listSenders
+      parameters:
+      - name: merchant_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        description: Merchant account ID.
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 25
+          maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SenderList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /v1/senders/{sender_id}:
+    get:
+      tags:
+      - Account
+      summary: Get sender
+      description: Sender status, messaging limit and quality.
+      operationId: getSender
+      parameters:
+      - name: sender_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        description: Sender ID. Use the merchant_id to send directly on behalf of the merchant (default, no channel
+          required) or, optionally, the ID of one of the merchant's channels. Equivalent to Meta Cloud API's phone_number_id.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sender'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/{sender_id}/messages:
+    post:
+      tags:
+      - Messages
+      summary: Send message
+      description: 'Sends a message to a phone number (E.164) or PHIZ ID, on behalf of the merchant (`sender_id`
+        = `merchant_id`) or, optionally, through one of its channels. The `202` response only confirms the message
+        was accepted; the final outcome (`sent`, `delivered`, `read` or `failed`) arrives through the `message_status`
+        webhook.
+
+
+        Merchant-initiated messages follow the opt-in policy, to be defined by Product.
+
+
+        The same endpoint with `status: read` marks an inbound message as read (Cloud API compatible).'
+      operationId: sendMessage
+      parameters:
+      - name: sender_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        description: Sender ID. Use the merchant_id to send directly on behalf of the merchant (default, no channel
+          required) or, optionally, the ID of one of the merchant's channels. Equivalent to Meta Cloud API's phone_number_id.
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          maxLength: 128
+        example: pedido-48213-confirmacao
+        description: Unique key per logical request. Reusing the same key within 24 h returns the original response
+          without sending the message again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - $ref: '#/components/schemas/SendMessageRequest'
+              - $ref: '#/components/schemas/MarkReadRequest'
+            examples:
+              text_phone:
+                summary: Text to phone number
+                value:
+                  messaging_product: phiz
+                  to: '+5511987654321'
+                  to_type: phone
+                  type: text
+                  text:
+                    body: 'Olá, Maria! Seu pedido #48213 foi enviado.'
+                    preview_url: false
+                  biz_opaque_callback_data: pedido=48213
+              text_phiz_id:
+                summary: Text to PHIZ ID
+                value:
+                  to: '839201447'
+                  to_type: phiz_id
+                  type: text
+                  text:
+                    body: 'Seu cupom chegou: PHIZ10'
+              image:
+                summary: Image by link
+                value:
+                  to: '+5511987654321'
+                  type: image
+                  image:
+                    link: https://cdn.lojaexemplo.com.br/nf/48213.jpg
+                    caption: Nota fiscal
+              audio:
+                summary: Audio by link
+                value:
+                  to: '+5511987654321'
+                  type: audio
+                  audio:
+                    link: https://cdn.lojaexemplo.com.br/audios/aviso-entrega-48213.mp3
+              video:
+                summary: Video by link
+                value:
+                  to: '839201447'
+                  to_type: phiz_id
+                  type: video
+                  video:
+                    link: https://cdn.lojaexemplo.com.br/videos/montagem-48213.mp4
+                    caption: Como montar seu produto
+              document:
+                summary: Document
+                value:
+                  to: '+5511987654321'
+                  type: document
+                  document:
+                    link: https://cdn.lojaexemplo.com.br/nf/48213.pdf
+                    filename: nota-fiscal-48213.pdf
+                    caption: 'Nota fiscal do pedido #48213'
+              buttons:
+                summary: Reply buttons
+                value:
+                  to: '+5511987654321'
+                  type: interactive
+                  interactive:
+                    type: button
+                    body:
+                      text: Confirma a entrega amanhã entre 9h e 12h?
+                    action:
+                      buttons:
+                      - type: reply
+                        reply:
+                          id: confirmar
+                          title: Confirmar
+                      - type: reply
+                        reply:
+                          id: reagendar
+                          title: Reagendar
+              mark_read:
+                summary: Mark as read
+                value:
+                  messaging_product: phiz
+                  status: read
+                  message_id: pmid.IN_01JA9W2C
+      responses:
+        '202':
+          description: Message accepted for delivery.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+              example:
+                messaging_product: phiz
+                contacts:
+                - input: '+5511987654321'
+                  phiz_id: null
+                messages:
+                - id: pmid.01JA9VZ6T8R3
+                  message_status: accepted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '409':
+          description: Idempotency-Key reused with a different body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Sending not allowed by the opt-in policy, or type not allowed for the sender.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: 2201
+                  type: policy_violation
+                  message: Sending to this recipient is not allowed by the opt-in policy.
+                  trace_id: trc_77ac
+  /v1/messages/{message_id}:
+    get:
+      tags:
+      - Messages
+      summary: Get message status
+      description: Latest known status of a sent message. Use as a fallback; the webhook remains the primary source.
+        Data retained for 30 days.
+      operationId: getMessage
+      parameters:
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: pmid.01JA9VZ6T8R3
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageStatus'
+              example:
+                id: pmid.01JA9VZ6T8R3
+                sender_id: '1231'
+                status: delivered
+                updated_at: '2026-10-15T11:42:07Z'
+                biz_opaque_callback_data: pedido=48213
+                errors: []
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/apps/{app_id}/webhook:
+    get:
+      tags:
+      - Webhooks
+      summary: Get webhook
+      description: App webhook subscription settings and health.
+      operationId: getWebhook
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: app_2Fk81PzQ
+        description: Developer app ID.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+      - Webhooks
+      summary: Set webhook
+      description: Sets URL, verify_token and events. PHIZ performs the GET handshake on the URL before activating;
+        if it fails, returns 422.
+      operationId: setWebhook
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: app_2Fk81PzQ
+        description: Developer app ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookConfig'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '422':
+          description: Verification handshake failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - Webhooks
+      summary: Remove webhook
+      description: Stops delivering events to the app.
+      operationId: deleteWebhook
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: app_2Fk81PzQ
+        description: Developer app ID.
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /v1/apps/{app_id}/webhook/test:
+    post:
+      tags:
+      - Webhooks
+      summary: Send test event
+      description: Fires a signed sample `messages` event to the configured URL.
+      operationId: testWebhook
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: app_2Fk81PzQ
+        description: Developer app ID.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                field:
+                  type: string
+                  enum:
+                  - messages
+                  - message_status
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /v1/apps/{app_id}/webhook/deliveries:
+    get:
+      tags:
+      - Webhooks
+      summary: List webhook deliveries
+      description: History of the last 72 h with HTTP status, attempts and latency. Failed deliveries can be replayed.
+      operationId: listDeliveries
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: app_2Fk81PzQ
+        description: Developer app ID.
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - succeeded
+          - failed
+          - pending
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /v1/apps/{app_id}/webhook/deliveries/{delivery_id}/replay:
+    post:
+      tags:
+      - Webhooks
+      summary: Replay delivery
+      description: Re-sends an event with the same `X-Phiz-Delivery-Id`.
+      operationId: replayDelivery
+      parameters:
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: app_2Fk81PzQ
+        description: Developer app ID.
+      - name: delivery_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+webhooks:
+  verification:
+    get:
+      tags:
+      - Webhooks
+      summary: Verification handshake (GET on your server)
+      description: PHIZ calls your URL with `hub.mode=subscribe`, `hub.verify_token` and `hub.challenge`. Check
+        the token and answer 200 with the `hub.challenge` value as plain text.
+      parameters:
+      - name: hub.mode
+        in: query
+        schema:
+          type: string
+          enum:
+          - subscribe
+      - name: hub.verify_token
+        in: query
+        schema:
+          type: string
+      - name: hub.challenge
+        in: query
+        schema:
+          type: string
+        example: '1158201444'
+      responses:
+        '200':
+          description: Body = hub.challenge.
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: '1158201444'
+  messages:
+    post:
+      tags:
+      - Webhooks
+      summary: Message received from the user
+      description: Sent when a PHIZ user messages one of the merchant's senders. Answer 2xx within 10 s and process
+        asynchronously.
+      parameters:
+      - name: X-Phiz-Signature-256
+        in: header
+        required: true
+        schema:
+          type: string
+        example: sha256=6f1c…
+        description: HMAC-SHA256 of `{timestamp}.{raw body}` using the app's webhook secret.
+      - name: X-Phiz-Timestamp
+        in: header
+        required: true
+        schema:
+          type: integer
+        example: 1760528527
+        description: Unix epoch of the send. Reject if more than 5 min off.
+      - name: X-Phiz-Delivery-Id
+        in: header
+        required: true
+        schema:
+          type: string
+        example: dlv_01JA9W2D7K
+        description: Same across retries of the same event. Use it to drop duplicates.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEvent'
+            example:
+              object: phiz_merchant_account
+              entry:
+              - id: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+                changes:
+                - field: messages
+                  value:
+                    messaging_product: phiz
+                    metadata:
+                      sender_id: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+                      sender_type: merchant
+                      conversation_type: business_account
+                      display_name: Loja Exemplo
+                    contacts:
+                    - profile:
+                        name: Maria Souza
+                      phiz_id: '839201447'
+                      phone: '+5511987654321'
+                    messages:
+                    - from: '839201447'
+                      id: pmid.IN_01JA9W2C
+                      timestamp: '1760528527'
+                      type: text
+                      text:
+                        body: Quero reagendar a entrega
+                      context:
+                        id: pmid.01JA9VZ6T8R3
+      responses:
+        '200':
+          description: OK
+  message_status:
+    post:
+      tags:
+      - Webhooks
+      summary: Status change of a sent message
+      description: 'One event per transition: `sent` → `delivered` → `read`, or `failed` with `errors`. Arrival
+        order is not guaranteed; use `timestamp`.'
+      parameters:
+      - name: X-Phiz-Signature-256
+        in: header
+        required: true
+        schema:
+          type: string
+        example: sha256=6f1c…
+        description: HMAC-SHA256 of `{timestamp}.{raw body}` using the app's webhook secret.
+      - name: X-Phiz-Timestamp
+        in: header
+        required: true
+        schema:
+          type: integer
+        example: 1760528527
+        description: Unix epoch of the send. Reject if more than 5 min off.
+      - name: X-Phiz-Delivery-Id
+        in: header
+        required: true
+        schema:
+          type: string
+        example: dlv_01JA9W2D7K
+        description: Same across retries of the same event. Use it to drop duplicates.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEvent'
+            examples:
+              delivered:
+                value:
+                  object: phiz_merchant_account
+                  entry:
+                  - id: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+                    changes:
+                    - field: message_status
+                      value:
+                        messaging_product: phiz
+                        metadata:
+                          sender_id: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+                          sender_type: merchant
+                          conversation_type: business_account
+                          display_name: Loja Exemplo
+                        statuses:
+                        - id: pmid.01JA9VZ6T8R3
+                          status: delivered
+                          timestamp: '1760528410'
+                          recipient_id: '839201447'
+                          biz_opaque_callback_data: pedido=48213
+                          conversation:
+                            id: conv_01JA9W
+                            origin:
+                              type: service
+                            expires_at: '1760614810'
+              failed:
+                value:
+                  object: phiz_merchant_account
+                  entry:
+                  - id: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+                    changes:
+                    - field: message_status
+                      value:
+                        messaging_product: phiz
+                        metadata:
+                          sender_id: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+                          sender_type: merchant
+                          conversation_type: business_account
+                          display_name: Loja Exemplo
+                        statuses:
+                        - id: pmid.01JA9X0QW1
+                          status: failed
+                          timestamp: '1760528600'
+                          recipient_id: '+5511900000000'
+                          errors:
+                          - code: 2104
+                            title: recipient_not_reachable
+                            message: The phone number is not linked to a PHIZ account or blocked this sender.
+                            href: https://developers.phiz.chat/docs/errors#2104
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://gateway.phiz.chat/gateway/business/oauth/token
+          scopes:
+            messages:send: Send messages
+            messages:read: Read message statuses
+            webhooks:manage: Manage app webhook
+            account:read: Read account and senders
+            templates:manage: Reserved for the Marketing API
+  schemas:
+    TokenRequest:
+      type: object
+      required:
+      - grant_type
+      - client_id
+      - client_secret
+      properties:
+        grant_type:
+          type: string
+          enum:
+          - client_credentials
+        client_id:
+          type: string
+          example: app_2Fk81PzQ
+          description: App ID (client_id) issued in the Developer area.
+        client_secret:
+          type: string
+          format: password
+          example: phzsk_live_9c1f…
+          description: App secret. Shown only once, at creation or rotation.
+        scope:
+          type: string
+          example: messages:send messages:read
+          description: Requested scopes, space separated. If omitted, all scopes granted to the app are issued.
+    TokenResponse:
+      type: object
+      required:
+      - access_token
+      - token_type
+      - expires_in
+      - scope
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJFUzI1NiIsImtpZCI6InBoei0yMDI2LTEwIn0…
+        token_type:
+          type: string
+          enum:
+          - Bearer
+        expires_in:
+          type: integer
+          example: 3600
+          description: Lifetime in seconds.
+        scope:
+          type: string
+          example: messages:send messages:read webhooks:manage
+        merchant_id:
+          type: string
+          example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+    TokenInfo:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        app_id:
+          type: string
+          example: app_2Fk81PzQ
+        merchant_id:
+          type: string
+          example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        scope:
+          type: string
+          example: messages:send messages:read
+        senders:
+          type: array
+          items:
+            type: string
+          example:
+          - 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+          - '1231'
+          description: Senders this app may use.
+        expires_at:
+          type: string
+          format: date-time
+          example: '2026-10-15T12:30:00Z'
+    Merchant:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        name:
+          type: string
+          example: Loja Exemplo Ltda.
+        status:
+          type: string
+          enum:
+          - active
+          - restricted
+          - suspended
+        verification:
+          type: string
+          enum:
+          - unverified
+          - pending
+          - verified
+        created_at:
+          type: string
+          format: date-time
+    Sender:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        type:
+          type: string
+          enum:
+          - merchant
+          - channel
+          example: merchant
+          description: '`merchant`: the merchant itself, the default sender every merchant has. `channel`: one of
+            the merchant''s channels, optional.'
+        conversation_type:
+          type: string
+          enum:
+          - business_account
+          - channel_service
+          example: business_account
+          description: 'PhizChat conversation type (Public Accounts › Service): `business_account` for type = merchant,
+            `channel_service` for type = channel.'
+        display_name:
+          type: string
+          example: Loja Exemplo
+        channel_id:
+          type: string
+          nullable: true
+          example: null
+          description: Filled only when type = channel.
+        status:
+          type: string
+          enum:
+          - connected
+          - pending_review
+          - disabled
+        messaging_limit_tier:
+          type: string
+          example: TIER_1K
+          description: How many unique recipients may receive business-initiated messages in 24 h.
+        quality_rating:
+          type: string
+          enum:
+          - GREEN
+          - YELLOW
+          - RED
+          - UNKNOWN
+    SenderList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sender'
+        paging:
+          $ref: '#/components/schemas/Paging'
+    Paging:
+      type: object
+      properties:
+        next_cursor:
+          type: string
+          nullable: true
+          example: c2VuZGVyX2lkPXNuZF85
+    Recipient:
+      description: Recipient. Provide `to` and, if it is not a phone number, `to_type`. Phone numbers use E.164.
+      type: object
+    SendMessageRequest:
+      type: object
+      required:
+      - to
+      - type
+      properties:
+        messaging_product:
+          type: string
+          enum:
+          - phiz
+          default: phiz
+          description: Optional; kept for Cloud API compatibility.
+        recipient_type:
+          type: string
+          enum:
+          - individual
+          default: individual
+        to:
+          type: string
+          example: '+5511987654321'
+          description: Recipient phone number (E.164) or PHIZ ID.
+        to_type:
+          type: string
+          enum:
+          - phone
+          - phiz_id
+          default: phone
+        type:
+          type: string
+          enum:
+          - text
+          - image
+          - video
+          - audio
+          - document
+          - location
+          - interactive
+          - reaction
+          - template
+          description: '`template` is reserved for the future Marketing API.'
+        text:
+          $ref: '#/components/schemas/TextContent'
+        image:
+          $ref: '#/components/schemas/MediaContent'
+        video:
+          $ref: '#/components/schemas/MediaContent'
+        audio:
+          $ref: '#/components/schemas/MediaContent'
+        document:
+          $ref: '#/components/schemas/MediaContent'
+        location:
+          $ref: '#/components/schemas/LocationContent'
+        interactive:
+          $ref: '#/components/schemas/InteractiveContent'
+        reaction:
+          $ref: '#/components/schemas/ReactionContent'
+        context:
+          type: object
+          properties:
+            message_id:
+              type: string
+          description: Replies to (quotes) an earlier message.
+        biz_opaque_callback_data:
+          type: string
+          maxLength: 512
+          example: pedido=48213
+          description: Free text echoed back in every status webhook for this message.
+    TextContent:
+      type: object
+      required:
+      - body
+      properties:
+        body:
+          type: string
+          maxLength: 4096
+          example: 'Olá, Maria! Seu pedido #48213 foi enviado.'
+        preview_url:
+          type: boolean
+          default: false
+    MediaContent:
+      type: object
+      required:
+      - link
+      properties:
+        link:
+          type: string
+          format: uri
+          example: https://cdn.lojaexemplo.com.br/nf/48213.pdf
+          description: Public HTTPS URL hosted by the merchant or partner. PHIZ does not process or store the media;
+            the user's app downloads it straight from this link, which must stay reachable after sending.
+        caption:
+          type: string
+          maxLength: 1024
+          description: Not used for audio.
+        filename:
+          type: string
+          description: Document only.
+    LocationContent:
+      type: object
+      required:
+      - latitude
+      - longitude
+      properties:
+        latitude:
+          type: number
+          example: -23.5614
+        longitude:
+          type: number
+          example: -46.6559
+        name:
+          type: string
+          example: Loja Paulista
+        address:
+          type: string
+    InteractiveContent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - button
+          - list
+        body:
+          type: object
+          properties:
+            text:
+              type: string
+        action:
+          type: object
+          properties:
+            buttons:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum:
+                    - reply
+                  reply:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      title:
+                        type: string
+                        maxLength: 20
+    ReactionContent:
+      type: object
+      properties:
+        message_id:
+          type: string
+        emoji:
+          type: string
+          example: 👍
+    SendMessageResponse:
+      type: object
+      properties:
+        messaging_product:
+          type: string
+          example: phiz
+        contacts:
+          type: array
+          items:
+            type: object
+            properties:
+              input:
+                type: string
+                example: '+5511987654321'
+              phiz_id:
+                type: string
+                nullable: true
+                example: null
+                description: Filled only if the recipient has already talked to this sender.
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: pmid.01JA9VZ6T8R3
+              message_status:
+                type: string
+                enum:
+                - accepted
+    MessageStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          example: pmid.01JA9VZ6T8R3
+        sender_id:
+          type: string
+          example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+        status:
+          type: string
+          enum:
+          - accepted
+          - sent
+          - delivered
+          - read
+          - failed
+        updated_at:
+          type: string
+          format: date-time
+        biz_opaque_callback_data:
+          type: string
+          nullable: true
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    MarkReadRequest:
+      type: object
+      required:
+      - status
+      - message_id
+      properties:
+        messaging_product:
+          type: string
+          enum:
+          - phiz
+        status:
+          type: string
+          enum:
+          - read
+        message_id:
+          type: string
+          example: pmid.IN_01JA9W2C
+        typing_indicator:
+          type: boolean
+          default: false
+    WebhookConfig:
+      type: object
+      required:
+      - url
+      - verify_token
+      properties:
+        url:
+          type: string
+          format: uri
+          example: https://integracao.lojaexemplo.com.br/phiz/webhook
+        verify_token:
+          type: string
+          writeOnly: true
+          example: um-texto-que-so-voce-conhece
+          description: Text you choose, sent back in the GET handshake.
+        fields:
+          type: array
+          items:
+            type: string
+            enum:
+            - messages
+            - message_status
+            - sender_update
+            - account_update
+          example:
+          - messages
+          - message_status
+        status:
+          type: string
+          readOnly: true
+          enum:
+          - verified
+          - pending_verification
+          - failing
+          - disabled
+    WebhookEvent:
+      type: object
+      description: Envelope for every event. May batch several events of the same merchant.
+      properties:
+        object:
+          type: string
+          enum:
+          - phiz_merchant_account
+        entry:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: 7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57
+              changes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      enum:
+                      - messages
+                      - message_status
+                      - sender_update
+                      - account_update
+                    value:
+                      type: object
+    ErrorDetail:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 2104
+        title:
+          type: string
+          example: recipient_not_reachable
+        message:
+          type: string
+        href:
+          type: string
+          format: uri
+    OAuthError:
+      type: object
+      description: RFC 6749 §5.2
+      properties:
+        error:
+          type: string
+          enum:
+          - invalid_request
+          - invalid_client
+          - invalid_scope
+          - unsupported_grant_type
+        error_description:
+          type: string
+          example: Client authentication failed.
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 1003
+            type:
+              type: string
+              example: invalid_request
+            message:
+              type: string
+              example: Field 'to' must be E.164 when to_type is 'phone'.
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  issue:
+                    type: string
+            trace_id:
+              type: string
+              example: trc_9f2c41ab
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing, invalid or expired token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: 1101
+              type: unauthorized
+              message: Access token expired.
+              trace_id: trc_1a2b
+    Forbidden:
+      description: The app lacks the scope or access to the sender.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Rate limit reached. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+    ServerError:
+      description: Internal error. Safe to retry with the same Idempotency-Key.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
