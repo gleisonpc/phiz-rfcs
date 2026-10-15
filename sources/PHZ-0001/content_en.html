@@ -362,25 +362,16 @@ stateDiagram-v2
 <section>
 <h2 id="§devarea"><span class="n">10</span>Developer area in the Open Platform</h2>
 <p>Developer settings move out of <em>Channel › Development Settings</em> into a merchant menu item, <strong>Developer</strong>, next to <em>Settings</em>. It reuses the existing Merchant ID, the roles from <em>Team management</em> and the <em>Operation log</em>.</p>
-<div class="mock" aria-label="Sketch of the credentials screen">
-  <div class="mock-top"><i></i><i></i><i></i><span>open.phiz.chat/developer/apps/app_2Fk81PzQ</span></div>
-  <div class="mock-body">
-    <nav class="mock-nav"><span class="grp">Developer</span><span>Overview</span><span class="on">Apps</span><span>Senders</span><span>API logs</span><span>Sandbox</span></nav>
-    <div class="mock-main">
-      <h6>Blip integration <span class="chip">Production</span></h6>
-      <dl class="kv">
-        <dt>Merchant ID</dt><dd><code>7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57</code></dd>
-        <dt>Client ID</dt><dd><code>app_2Fk81PzQ</code><span class="fakebtn">Copy</span></dd>
-        <dt>Client secret</dt><dd><code>phzsk_live_••••a91c</code><span class="chip">used 3 min ago</span><span class="fakebtn">Generate new secret</span></dd>
-        <dt>Previous secret</dt><dd><code>phzsk_live_••••77d0</code><span class="chip w">expires in 18 h</span><span class="fakebtn">Revoke now</span></dd>
-        <dt>Scopes</dt><dd><code>messages:send</code><code>messages:read</code><code>webhooks:manage</code></dd>
-        <dt>Allowed senders</dt><dd>Loja Exemplo (merchant) · Loja Exemplo - Ofertas <code>1231</code></dd>
-        <dt>Webhook</dt><dd><span class="chip">Verified</span><span class="fakebtn">Test</span><span class="fakebtn pri">View deliveries</span></dd>
-      </dl>
-    </div>
-  </div>
+<p>Mockups of the new area, with sample values. Click an image to open it at full size.</p>
+<div class="shots">
+<div class="shot"><a href="mocks/01-visao-geral.png" target="_blank" rel="noopener"><img src="mocks/01-visao-geral.png" alt="Overview: Merchant ID, base URL, integrations and first steps" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Screen 1.</b> Overview: Merchant ID, base URL, integrations and first steps</p></div>
+<div class="shot"><a href="mocks/02-nova-integracao.png" target="_blank" rel="noopener"><img src="mocks/02-nova-integracao.png" alt="New integration: name, scopes, allowed senders and environment" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Screen 2.</b> New integration: name, scopes, allowed senders and environment</p></div>
+<div class="shot"><a href="mocks/03-detalhe-integracao.png" target="_blank" rel="noopener"><img src="mocks/03-detalhe-integracao.png" alt="Integration details: credentials, secrets with rotation and scopes" width="1440" height="1031" loading="lazy"></a><p class="cap"><b>Screen 3.</b> Integration details: credentials, secrets with rotation and scopes</p></div>
+<div class="shot"><a href="mocks/04-segredo-criado.png" target="_blank" rel="noopener"><img src="mocks/04-segredo-criado.png" alt="Secret created, shown only once" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Screen 4.</b> Secret created, shown only once</p></div>
+<div class="shot"><a href="mocks/05-webhooks.png" target="_blank" rel="noopener"><img src="mocks/05-webhooks.png" alt="Webhooks: setup, events and recent deliveries" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Screen 5.</b> Webhooks: setup, events and recent deliveries</p></div>
+<div class="shot"><a href="mocks/06-remetentes.png" target="_blank" rel="noopener"><img src="mocks/06-remetentes.png" alt="Senders: direct message and channels, with the integrations that use them" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Screen 6.</b> Senders: direct message and channels, with the integrations that use them</p></div>
+<div class="shot"><a href="mocks/07-canal-migracao.png" target="_blank" rel="noopener"><img src="mocks/07-canal-migracao.png" alt="Channel page with the credentials migration notice" width="1440" height="760" loading="lazy"></a><p class="cap"><b>Screen 7.</b> Channel page with the credentials migration notice</p></div>
 </div>
-<p class="cap">Illustrative sketch of an app's page, with sample values.</p>
 <h3>Screens</h3>
 <div class="screens">
   <div class="screen"><h5>Overview</h5><span class="path">/developer</span><ul><li>Messages sent, delivered and failed in the last 24 h</li><li>Webhook health</li><li>Alerts: old secret still in use, webhook failing</li></ul></div>

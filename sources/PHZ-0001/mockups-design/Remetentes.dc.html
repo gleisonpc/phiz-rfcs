@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Desenvolvedor · Remetentes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#141414;background:#f2f2f2}
+a{color:#1f5fc4;text-decoration:none}a:hover{text-decoration:underline}
+.bar{height:64px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #ececec}
+.logo{font-weight:800;font-size:26px;color:#ef6a1f;letter-spacing:-.02em}
+.pill{background:#c4500d;color:#fff;font-weight:600;font-size:13px;padding:5px 14px;border-radius:999px}
+.side{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side .it{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:#2a2a2a}
+.side .it .chev{margin-left:auto;color:#888}
+.side .on{background:#fff;color:#b8470b;font-weight:600}
+.side .sub{padding-left:42px;color:#555;font-size:14.5px}
+.side .new{background:#fdebdd;color:#8f3a07;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.card{background:#fff;border-radius:14px;padding:24px}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;border-bottom:1px solid #ececec}
+.tbl td{padding:16px 14px;border-bottom:1px solid #f1f1f1;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:#e1f4e6;color:#14612a}.off{background:#ececec;color:#4a4a4a}.soft{background:#fdebdd;color:#8f3a07}
+.chip{display:inline-block;background:#f3f3f3;border-radius:6px;padding:3px 9px;margin:2px 4px 2px 0;font-size:12.5px;color:#333}
+</style>
+</helmet>
+<div style="min-height:1000px;display:flex;flex-direction:column">
+  <div class="bar">
+    <div style="display:flex;align-items:center;gap:12px"><span class="logo">PHIZ</span><span class="pill">Open Platform</span></div>
+    <div style="display:flex;align-items:center;gap:26px;font-size:14px"><span style="color:#1f5fc4">Português ▾</span><span style="font-weight:600">Loja Exemplo ▾</span></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;flex:1">
+    <aside style="flex:0 0 256px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;box-sizing:border-box">
+      <nav class="side" aria-label="Menu">
+        <div class="it">Página Inicial</div>
+        <div class="it">Gestão de Pagamentos<span class="chev">⌄</span></div>
+        <div class="it">Miniapp<span class="chev">⌄</span></div>
+        <div class="it">Canal<span class="chev">⌄</span></div>
+        <div class="it" style="font-weight:600">Desenvolvedor<span class="new">Novo</span><span class="chev">⌃</span></div>
+        <div class="it sub">Visão geral</div>
+        <div class="it sub">Integrações</div>
+        <div class="it sub">Webhooks</div>
+        <div class="it sub on">Remetentes</div>
+        <div class="it">Configurações<span class="chev">⌄</span></div>
+      </nav>
+    </aside>
+    <main style="flex:999 1 560px;min-width:0;padding:28px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+      <div>
+        <h1 style="margin:0;font-size:28px">Remetentes</h1>
+        <p style="margin:6px 0 0;color:#5f5f5f;font-size:15px;max-width:66ch">O remetente é quem aparece para o usuário no PhizChat. Sua conta envia como ela mesma (mensagem direta) e, se tiver canais, também por eles.</p>
+      </div>
+
+      <section class="card" aria-labelledby="r-h">
+        <h2 id="r-h" style="margin:0 0 6px;font-size:18px">Remetentes da conta</h2>
+        <p style="margin:0 0 8px;color:#5f5f5f;font-size:14px">Use o <span class="mono">sender_id</span> na rota <span class="mono">POST /v1/{sender_id}/messages</span>.</p>
+        <div style="overflow-x:auto">
+        <table class="tbl" style="min-width:820px">
+          <thead><tr><th>Remetente</th><th>Tipo</th><th>sender_id</th><th>Integrações com acesso</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:12px"><span aria-hidden="true" style="width:38px;height:38px;border-radius:50%;background:#1f1f1f;color:#f4c46a;display:grid;place-items:center;font-weight:700;font-size:15px;flex:none">LE</span><span><b>Loja Exemplo</b><br><span style="color:#5f5f5f;font-size:13px">Nome e foto de Informações do comerciante</span></span></div></td>
+              <td><span class="tag soft">Mensagem direta</span> <span class="tag off">Padrão</span></td>
+              <td class="mono" style="word-break:break-all;max-width:230px">7b1e4c52-91d0-4a6e-b3f8-2c5d9a0e7f14</td>
+              <td><span class="chip">Blip · Atendimento</span><span class="chip">Salesforce · Marketing</span></td>
+              <td><span class="tag ok">Ativo</span></td>
+            </tr>
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:12px"><span aria-hidden="true" style="width:38px;height:38px;border-radius:50%;background:#1f1f1f;color:#f4c46a;display:grid;place-items:center;font-weight:700;font-size:15px;flex:none">LO</span><span><b>Loja Exemplo · Ofertas</b><br><span style="color:#5f5f5f;font-size:13px">Canal · 2 inscritos</span></span></div></td>
+              <td><span class="tag off">Canal</span></td>
+              <td class="mono">1231</td>
+              <td><span class="chip">Blip · Atendimento</span><span class="chip">Backoffice interno</span></td>
+              <td><span class="tag ok">Ativo</span></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <div style="display:flex;flex-wrap:wrap;gap:20px">
+        <section class="card" style="flex:1 1 360px;min-width:0" aria-labelledby="a-h">
+          <h2 id="a-h" style="margin:0 0 10px;font-size:18px">Como o usuário vê</h2>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:#f6f6f6;border-radius:12px;padding:16px;font-size:14.5px;line-height:1.5"><b>Loja Exemplo</b><br>Olá! Seu pedido saiu para entrega.</div>
+            <p style="margin:0;color:#5f5f5f;font-size:13.5px">Mensagem direta: aparece como conversa com a loja, sem canal.</p>
+          </div>
+        </section>
+        <section class="card" style="flex:1 1 360px;min-width:0" aria-labelledby="b-h">
+          <h2 id="b-h" style="margin:0 0 10px;font-size:18px">Boas práticas</h2>
+          <ul style="margin:0;padding-left:20px;color:#2a2a2a;font-size:14.5px;line-height:1.7">
+            <li>Dê a cada integração só os remetentes de que ela precisa.</li>
+            <li>Os canais continuam sendo criados em <b>Canal › Meus Canais</b>.</li>
+            <li>Mudanças em remetentes geram o evento <span class="mono">sender_update</span> no webhook.</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

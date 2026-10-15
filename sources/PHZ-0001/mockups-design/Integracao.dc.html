@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Desenvolvedor · Detalhe da integração</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#141414;background:#f2f2f2}
+a{color:#1f5fc4;text-decoration:none}a:hover{text-decoration:underline}
+.bar{height:64px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #ececec}
+.logo{font-weight:800;font-size:26px;color:#ef6a1f;letter-spacing:-.02em}
+.pill{background:#c4500d;color:#fff;font-weight:600;font-size:13px;padding:5px 14px;border-radius:999px}
+.side{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side .it{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:#2a2a2a}
+.side .it .chev{margin-left:auto;color:#888}
+.side .on{background:#fff;color:#b8470b;font-weight:600}
+.side .sub{padding-left:42px;color:#555;font-size:14.5px}
+.side .new{background:#fdebdd;color:#8f3a07;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.card{background:#fff;border-radius:14px;padding:24px}
+.lbl{font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.05em}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:#c4500d;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.btn2{display:inline-flex;align-items:center;gap:8px;background:#fff;color:#222;border:1px solid #d9d9d9;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.btn3{background:none;border:0;color:#b3261e;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer;padding:6px 8px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;border-bottom:1px solid #ececec}
+.tbl td{padding:15px 14px;border-bottom:1px solid #f1f1f1;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:#e1f4e6;color:#14612a}.warn{background:#fff0d6;color:#7a4300}.off{background:#ececec;color:#4a4a4a}
+.sc{display:inline-block;background:#f3f3f3;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:#333}
+.kv{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;padding:14px 0;border-bottom:1px solid #f1f1f1}
+.kv:last-child{border-bottom:0}
+.kv .k{flex:0 0 130px;font-size:14px;color:#5f5f5f}
+.kv .v{flex:1 1 220px;min-width:0;word-break:break-all}
+</style>
+</helmet>
+<div style="min-height:1000px;display:flex;flex-direction:column">
+  <div class="bar">
+    <div style="display:flex;align-items:center;gap:12px"><span class="logo">PHIZ</span><span class="pill">Open Platform</span></div>
+    <div style="display:flex;align-items:center;gap:26px;font-size:14px"><span style="color:#1f5fc4">Português ▾</span><span style="font-weight:600">Loja Exemplo ▾</span></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;flex:1">
+    <aside style="flex:0 0 256px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;box-sizing:border-box">
+      <nav class="side" aria-label="Menu">
+        <div class="it">Página Inicial</div>
+        <div class="it">Gestão de Pagamentos<span class="chev">⌄</span></div>
+        <div class="it">Miniapp<span class="chev">⌄</span></div>
+        <div class="it">Canal<span class="chev">⌄</span></div>
+        <div class="it" style="font-weight:600">Desenvolvedor<span class="new">Novo</span><span class="chev">⌃</span></div>
+        <div class="it sub">Visão geral</div>
+        <div class="it sub on">Integrações</div>
+        <div class="it sub">Webhooks</div>
+        <div class="it sub">Remetentes</div>
+        <div class="it">Configurações<span class="chev">⌄</span></div>
+      </nav>
+    </aside>
+    <main style="flex:999 1 560px;min-width:0;padding:28px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+      <nav aria-label="Trilha" style="font-size:14px;color:#5f5f5f"><a href="#">Integrações</a> &nbsp;/&nbsp; Blip · Atendimento</nav>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h1 style="margin:0;font-size:28px">Blip · Atendimento</h1><span class="tag ok">Ativa</span><span class="tag off">Produção</span></div>
+        <div style="display:flex;gap:10px"><button class="btn2" type="button">Editar</button><button class="btn2" type="button">Desativar</button></div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+        <div style="flex:2 1 560px;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <section class="card" aria-labelledby="c-h">
+            <h2 id="c-h" style="margin:0 0 6px;font-size:18px">Credenciais</h2>
+            <p style="margin:0 0 8px;color:#5f5f5f;font-size:14px">Use o client ID e um segredo para obter um token de acesso (OAuth 2.0, client_credentials).</p>
+            <div class="kv"><div class="k">Client ID</div><div class="v mono">phz_cid_9d31c0a7</div><a href="#" style="font-size:13px">Copiar</a></div>
+            <div class="kv"><div class="k">URL do token</div><div class="v mono">https://gateway.phiz.chat/gateway/business/oauth/token</div><a href="#" style="font-size:13px">Copiar</a></div>
+            <div class="kv"><div class="k">ID do comerciante</div><div class="v mono">7b1e4c52-91d0-4a6e-b3f8-2c5d9a0e7f14</div><a href="#" style="font-size:13px">Copiar</a></div>
+          </section>
+
+          <section class="card" aria-labelledby="s-h">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <h2 id="s-h" style="margin:0;font-size:18px">Segredos</h2>
+              <button class="btn" type="button">Gerar novo segredo</button>
+            </div>
+            <p style="margin:0 0 10px;color:#5f5f5f;font-size:14px">Até dois segredos ficam ativos ao mesmo tempo, para trocar sem interromper o envio. O segredo antigo expira 24 h depois de gerar o novo.</p>
+            <div style="overflow-x:auto">
+            <table class="tbl" style="min-width:560px">
+              <thead><tr><th>Segredo</th><th>Criado em</th><th>Último uso</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                <tr><td class="mono">phzsk_live_••••••••3f9a</td><td>14/10/2026</td><td>há 2 min</td><td><span class="tag ok">Ativo</span></td><td style="text-align:right"><button class="btn3" type="button">Revogar</button></td></tr>
+                <tr><td class="mono">phzsk_live_••••••••b27c</td><td>02/07/2026</td><td>há 1 h</td><td><span class="tag warn">Expira em 23 h</span></td><td style="text-align:right"><button class="btn3" type="button">Revogar agora</button></td></tr>
+              </tbody>
+            </table>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="t-h">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h2 id="t-h" style="margin:0;font-size:18px">Testar o token</h2><a href="#" style="font-size:13px">Copiar</a></div>
+            <pre class="mono" style="margin:0;background:#1f1f1f;color:#ececec;border-radius:10px;padding:16px;overflow-x:auto;line-height:1.6;font-size:12.5px">curl -X POST "https://gateway.phiz.chat/gateway/business/oauth/token" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=phz_cid_9d31c0a7" \
+  -d "client_secret=$PHIZ_CLIENT_SECRET" \
+  -d "scope=messages:send messages:read"</pre>
+          </section>
+        </div>
+
+        <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <section class="card" aria-labelledby="e-h">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h2 id="e-h" style="margin:0;font-size:18px">Escopos</h2><a href="#" style="font-size:13px">Editar</a></div>
+            <div><span class="sc">messages:send</span><span class="sc">messages:read</span><span class="sc">webhooks:manage</span></div>
+            <p style="margin:12px 0 0;color:#5f5f5f;font-size:13.5px">O token só permite as ações listadas aqui.</p>
+          </section>
+          <section class="card" aria-labelledby="r-h">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h2 id="r-h" style="margin:0;font-size:18px">Remetentes permitidos</h2><a href="#" style="font-size:13px">Editar</a></div>
+            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14.5px">
+              <li><b>Mensagem direta</b><br><span style="color:#5f5f5f;font-size:13.5px">Loja Exemplo</span></li>
+              <li><b>Loja Exemplo · Ofertas</b><br><span style="color:#5f5f5f;font-size:13.5px">Canal 1231</span></li>
+            </ul>
+          </section>
+          <section class="card" aria-labelledby="a-h">
+            <h2 id="a-h" style="margin:0 0 12px;font-size:18px">Atividade recente</h2>
+            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14px">
+              <li>Token emitido<br><span style="color:#5f5f5f;font-size:13px">há 2 min · 1 h de validade</span></li>
+              <li>Segredo gerado<br><span style="color:#5f5f5f;font-size:13px">14/10/2026 · por gleison@lojaexemplo.com</span></li>
+              <li>Escopo webhooks:manage adicionado<br><span style="color:#5f5f5f;font-size:13px">03/07/2026</span></li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Desenvolvedor · Segredo criado</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#141414;background:#f2f2f2}
+a{color:#1f5fc4;text-decoration:none}a:hover{text-decoration:underline}
+.bar{height:64px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #ececec}
+.logo{font-weight:800;font-size:26px;color:#ef6a1f;letter-spacing:-.02em}
+.pill{background:#c4500d;color:#fff;font-weight:600;font-size:13px;padding:5px 14px;border-radius:999px}
+.side{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side .it{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:#2a2a2a}
+.side .it .chev{margin-left:auto;color:#888}
+.side .on{background:#fff;color:#b8470b;font-weight:600}
+.side .sub{padding-left:42px;color:#555;font-size:14.5px}
+.side .new{background:#fdebdd;color:#8f3a07;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.card{background:#fff;border-radius:14px;padding:24px}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:#c4500d;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.btn2{display:inline-flex;align-items:center;gap:8px;background:#fff;color:#222;border:1px solid #d9d9d9;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:#e1f4e6;color:#14612a}.warn{background:#fff0d6;color:#7a4300}
+.sc{display:inline-block;background:#f3f3f3;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:#333}
+</style>
+</helmet>
+<div style="min-height:1000px;display:flex;flex-direction:column;position:relative">
+  <div class="bar">
+    <div style="display:flex;align-items:center;gap:12px"><span class="logo">PHIZ</span><span class="pill">Open Platform</span></div>
+    <div style="display:flex;align-items:center;gap:26px;font-size:14px"><span style="color:#1f5fc4">Português ▾</span><span style="font-weight:600">Loja Exemplo ▾</span></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;flex:1">
+    <aside style="flex:0 0 256px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;box-sizing:border-box">
+      <nav class="side" aria-label="Menu">
+        <div class="it">Página Inicial</div>
+        <div class="it">Gestão de Pagamentos<span class="chev">⌄</span></div>
+        <div class="it">Miniapp<span class="chev">⌄</span></div>
+        <div class="it">Canal<span class="chev">⌄</span></div>
+        <div class="it" style="font-weight:600">Desenvolvedor<span class="new">Novo</span><span class="chev">⌃</span></div>
+        <div class="it sub">Visão geral</div>
+        <div class="it sub on">Integrações</div>
+        <div class="it sub">Webhooks</div>
+        <div class="it sub">Remetentes</div>
+        <div class="it">Configurações<span class="chev">⌄</span></div>
+      </nav>
+    </aside>
+    <main style="flex:999 1 560px;min-width:0;padding:28px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+      <nav aria-label="Trilha" style="font-size:14px;color:#5f5f5f">Integrações &nbsp;/&nbsp; CRM de vendas</nav>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h1 style="margin:0;font-size:28px">CRM de vendas</h1><span class="tag ok">Ativa</span></div>
+      <section class="card">
+        <h2 style="margin:0 0 8px;font-size:18px">Credenciais</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 0"><div style="flex:0 0 130px;font-size:14px;color:#5f5f5f">Client ID</div><div class="mono">phz_cid_e04a58b1</div></div>
+      </section>
+    </main>
+  </div>
+
+  <div style="position:absolute;inset:0;background:rgba(20,20,20,.55);display:flex;justify-content:center;align-items:flex-start;padding:90px 16px;box-sizing:border-box">
+    <div role="dialog" aria-label="Segredo criado" style="background:#fff;border-radius:16px;width:100%;max-width:640px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:20px">
+      <div>
+        <h2 style="margin:0;font-size:22px">Segredo criado</h2>
+        <p style="margin:6px 0 0;color:#5f5f5f;font-size:14.5px">Integração <b style="color:#141414">CRM de vendas</b> · Produção</p>
+      </div>
+      <div style="background:#fff0d6;border-radius:10px;padding:14px 16px;font-size:14.5px;color:#5c3400;line-height:1.5"><b>Copie o segredo agora.</b> Por segurança, ele não será exibido de novo. Se você perder, gere um novo segredo.</div>
+      <div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">Client ID</div>
+        <div class="mono" style="background:#f6f6f6;border:1px solid #e3e3e3;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center"><span>phz_cid_e04a58b1</span><a href="#" style="font-size:13px;font-family:-apple-system,system-ui,sans-serif">Copiar</a></div>
+      </div>
+      <div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">Segredo</div>
+        <div class="mono" style="background:#f6f6f6;border:1px solid #e3e3e3;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center"><span style="word-break:break-all">phzsk_live_8Qm2vK0xTz4HcYw9LrJ1bNd7Fe3Uo5Ga</span><a href="#" style="font-size:13px;font-family:-apple-system,system-ui,sans-serif;flex:none">Copiar</a></div>
+      </div>
+      <label style="display:flex;gap:12px;align-items:flex-start;font-size:14.5px"><input type="checkbox" style="margin-top:3px;width:17px;height:17px;accent-color:#c4500d"><span>Já guardei o segredo em um local seguro.</span></label>
+      <div style="display:flex;justify-content:flex-end;border-top:1px solid #ececec;padding-top:18px">
+        <button class="btn" type="button" style="opacity:.55" disabled>Concluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

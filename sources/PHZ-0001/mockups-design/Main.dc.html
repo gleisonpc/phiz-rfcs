@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Desenvolvedor · Visão geral</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#141414;background:#f2f2f2}
+a{color:#1f5fc4;text-decoration:none}a:hover{text-decoration:underline}
+.bar{height:64px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #ececec}
+.logo{font-weight:800;font-size:26px;color:#ef6a1f;letter-spacing:-.02em}
+.pill{background:#c4500d;color:#fff;font-weight:600;font-size:13px;padding:5px 14px;border-radius:999px}
+.side{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side .it{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:#2a2a2a}
+.side .it svg{flex:none}
+.side .it .chev{margin-left:auto;color:#888}
+.side .on{background:#fff;color:#b8470b;font-weight:600}
+.side .sub{padding-left:42px;color:#555;font-size:14.5px}
+.side .new{background:#fdebdd;color:#8f3a07;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.card{background:#fff;border-radius:14px;padding:24px}
+.lbl{font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.05em}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:#c4500d;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.btn2{display:inline-flex;align-items:center;gap:8px;background:#fff;color:#222;border:1px solid #d9d9d9;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;border-bottom:1px solid #ececec}
+.tbl td{padding:15px 14px;border-bottom:1px solid #f1f1f1;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:#e1f4e6;color:#14612a}.warn{background:#fff0d6;color:#7a4300}.off{background:#ececec;color:#4a4a4a}
+.sc{display:inline-block;background:#f3f3f3;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:#333}
+.seg{display:inline-flex;background:#e6e6e6;border-radius:10px;padding:3px}
+.seg span{padding:7px 16px;border-radius:8px;font-size:14px;font-weight:600;color:#555}
+.seg .a{background:#fff;color:#141414}
+</style>
+</helmet>
+<div style="min-height:1000px;display:flex;flex-direction:column">
+  <div class="bar">
+    <div style="display:flex;align-items:center;gap:12px"><span class="logo">PHIZ</span><span class="pill">Open Platform</span></div>
+    <div style="display:flex;align-items:center;gap:26px;font-size:14px"><span style="color:#1f5fc4">Português ▾</span><span style="font-weight:600">Loja Exemplo ▾</span></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;flex:1">
+    <aside style="flex:0 0 256px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;box-sizing:border-box">
+      <nav class="side" aria-label="Menu">
+        <div class="it"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Página Inicial</div>
+        <div class="it"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1-1.3-1.8-3-1.8s-3 .8-3 1.9 1.2 1.6 3 2 3 .9 3 2-1.3 1.9-3 1.9-3-.8-3-1.8"/></svg>Gestão de Pagamentos<span class="chev">⌄</span></div>
+        <div class="it"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Miniapp<span class="chev">⌄</span></div>
+        <div class="it"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Canal<span class="chev">⌄</span></div>
+        <div class="it" style="font-weight:600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></svg>Desenvolvedor<span class="new">Novo</span><span class="chev">⌃</span></div>
+        <div class="it sub on">Visão geral</div>
+        <div class="it sub">Integrações</div>
+        <div class="it sub">Webhooks</div>
+        <div class="it sub">Remetentes</div>
+        <div class="it"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Configurações<span class="chev">⌄</span></div>
+      </nav>
+    </aside>
+    <main style="flex:999 1 560px;min-width:0;padding:28px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+        <div>
+          <h1 style="margin:0;font-size:28px;letter-spacing:-.01em">Desenvolvedor</h1>
+          <p style="margin:6px 0 0;color:#5f5f5f;font-size:15px;max-width:60ch">Credenciais, webhooks e remetentes da conta do comerciante. Tudo o que seus sistemas e parceiros precisam para enviar e receber mensagens pela API.</p>
+        </div>
+        <div class="seg" role="group" aria-label="Ambiente"><span class="a">Produção</span><span>Teste</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+        <div class="card" style="padding:20px">
+          <div class="lbl">ID do comerciante</div>
+          <div class="mono" style="margin-top:10px;word-break:break-all">7b1e4c52-91d0-4a6e-b3f8-2c5d9a0e7f14</div>
+          <div style="margin-top:10px;font-size:13px"><a href="#">Copiar</a></div>
+        </div>
+        <div class="card" style="padding:20px">
+          <div class="lbl">URL base da API</div>
+          <div class="mono" style="margin-top:10px;font-size:12px;word-break:break-all">https://gateway.phiz.chat/gateway/business</div>
+          <div style="margin-top:10px;font-size:13px"><a href="#">Copiar</a> · <a href="#">Ver documentação</a></div>
+        </div>
+        <div class="card" style="padding:20px">
+          <div class="lbl">Situação</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;font-size:14px">
+            <div><span class="tag ok">Ativo</span>&nbsp; 3 integrações</div>
+            <div><span class="tag ok">Ativo</span>&nbsp; Webhook verificado</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="card" aria-labelledby="int-h">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <h2 id="int-h" style="margin:0;font-size:18px">Integrações</h2>
+            <p style="margin:4px 0 0;color:#5f5f5f;font-size:14px">Cada sistema ou parceiro (CRM, BSP, backoffice) tem seu próprio client ID e segredo.</p>
+          </div>
+          <button class="btn" type="button">+ Nova integração</button>
+        </div>
+        <div style="overflow-x:auto">
+        <table class="tbl" style="min-width:820px">
+          <thead><tr><th>Integração</th><th>Client ID</th><th>Escopos</th><th>Remetentes</th><th>Último uso</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Blip · Atendimento</b></td><td class="mono">phz_cid_9d31c0a7</td><td><span class="sc">messages:send</span><span class="sc">messages:read</span><span class="sc">webhooks:manage</span></td><td>Mensagem direta + 1 canal</td><td>há 2 min</td><td><span class="tag ok">Ativa</span></td></tr>
+            <tr><td><b>Salesforce · Marketing</b></td><td class="mono">phz_cid_41be7f20</td><td><span class="sc">messages:send</span></td><td>Mensagem direta</td><td>há 3 h</td><td><span class="tag ok">Ativa</span></td></tr>
+            <tr><td><b>Backoffice interno</b></td><td class="mono">phz_cid_c7a2d9e5</td><td><span class="sc">messages:send</span><span class="sc">account:read</span></td><td>Canal Ofertas</td><td>há 12 dias</td><td><span class="tag warn">Segredo em rotação</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <section class="card" style="flex:1 1 320px;min-width:0" aria-labelledby="ps-h">
+          <h2 id="ps-h" style="margin:0 0 14px;font-size:18px">Primeiros passos</h2>
+          <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px;font-size:14.5px">
+            <li style="display:flex;gap:12px;align-items:flex-start"><span class="tag ok" style="flex:none;min-width:62px;text-align:center">Feito</span><span><b>Criar uma integração</b><br><span style="color:#5f5f5f">Gere o client ID e o segredo.</span></span></li>
+            <li style="display:flex;gap:12px;align-items:flex-start"><span class="tag ok" style="flex:none;min-width:62px;text-align:center">Feito</span><span><b>Configurar o webhook</b><br><span style="color:#5f5f5f">Receba mensagens e status de entrega.</span></span></li>
+            <li style="display:flex;gap:12px;align-items:flex-start"><span class="tag off" style="flex:none;min-width:62px;text-align:center">Pendente</span><span><b>Enviar uma mensagem de teste</b><br><span style="color:#5f5f5f">Use o ambiente de Teste e o exemplo ao lado.</span></span></li>
+          </ol>
+        </section>
+        <section class="card" style="flex:2 1 460px;min-width:0" aria-labelledby="ex-h">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h2 id="ex-h" style="margin:0;font-size:18px">Enviar uma mensagem</h2><a href="#" style="font-size:13px">Copiar</a></div>
+          <pre class="mono" style="margin:0;background:#1f1f1f;color:#ececec;border-radius:10px;padding:16px;overflow-x:auto;line-height:1.6;font-size:12.5px">curl -X POST "https://gateway.phiz.chat/gateway/business/v1/7b1e4c52-91d0-4a6e-b3f8-2c5d9a0e7f14/messages" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: 6f1d2c9e-0a41-4b7d-8c3e-5a9b1d7e2f40" \
+  -H "Content-Type: application/json" \
+  -d '{"to":"+5511900000000","to_type":"phone","type":"text","text":{"body":"Olá! Seu pedido saiu para entrega."}}'</pre>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

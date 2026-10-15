@@ -363,25 +363,16 @@ stateDiagram-v2
 <section>
 <h2 id="§devarea"><span class="n">10</span>Área do Desenvolvedor no Open Platform</h2>
 <p>A configuração de desenvolvedor sai de <em>Canal › Configuração de Desenvolvimento</em> e vira um item de menu do comerciante, <strong>Desenvolvedor</strong>, ao lado de <em>Configurações</em>. Ela reaproveita o ID do Comerciante, as funções de <em>Gerenciamento da equipe</em> e o <em>Registro de operações</em> que já existem.</p>
-<div class="mock" aria-label="Esboço da tela de credenciais">
-  <div class="mock-top"><i></i><i></i><i></i><span>open.phiz.chat/developer/apps/app_2Fk81PzQ</span></div>
-  <div class="mock-body">
-    <nav class="mock-nav"><span class="grp">Desenvolvedor</span><span>Visão geral</span><span class="on">Apps</span><span>Remetentes</span><span>Logs de API</span><span>Sandbox</span></nav>
-    <div class="mock-main">
-      <h6>Integração Blip <span class="chip">Produção</span></h6>
-      <dl class="kv">
-        <dt>ID do comerciante</dt><dd><code>7f3e2a10-5b8c-4d21-9e6f-2a1c0b9d4e57</code></dd>
-        <dt>Client ID</dt><dd><code>app_2Fk81PzQ</code><span class="fakebtn">Copiar</span></dd>
-        <dt>Client secret</dt><dd><code>phzsk_live_••••a91c</code><span class="chip">usado há 3 min</span><span class="fakebtn">Gerar novo secret</span></dd>
-        <dt>Secret anterior</dt><dd><code>phzsk_live_••••77d0</code><span class="chip w">expira em 18 h</span><span class="fakebtn">Revogar agora</span></dd>
-        <dt>Escopos</dt><dd><code>messages:send</code><code>messages:read</code><code>webhooks:manage</code></dd>
-        <dt>Remetentes permitidos</dt><dd>Loja Exemplo (comerciante) · Loja Exemplo - Ofertas <code>1231</code></dd>
-        <dt>Webhook</dt><dd><span class="chip">Verificado</span><span class="fakebtn">Testar</span><span class="fakebtn pri">Ver entregas</span></dd>
-      </dl>
-    </div>
-  </div>
+<p>Mockups da nova área, com valores de exemplo. Clique em uma imagem para abrir em tamanho real.</p>
+<div class="shots">
+<div class="shot"><a href="mocks/01-visao-geral.png" target="_blank" rel="noopener"><img src="mocks/01-visao-geral.png" alt="Visão geral: ID do comerciante, URL base, integrações e primeiros passos" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Tela 1.</b> Visão geral: ID do comerciante, URL base, integrações e primeiros passos</p></div>
+<div class="shot"><a href="mocks/02-nova-integracao.png" target="_blank" rel="noopener"><img src="mocks/02-nova-integracao.png" alt="Nova integração: nome, escopos, remetentes permitidos e ambiente" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Tela 2.</b> Nova integração: nome, escopos, remetentes permitidos e ambiente</p></div>
+<div class="shot"><a href="mocks/03-detalhe-integracao.png" target="_blank" rel="noopener"><img src="mocks/03-detalhe-integracao.png" alt="Detalhe da integração: credenciais, segredos com rotação e escopos" width="1440" height="1031" loading="lazy"></a><p class="cap"><b>Tela 3.</b> Detalhe da integração: credenciais, segredos com rotação e escopos</p></div>
+<div class="shot"><a href="mocks/04-segredo-criado.png" target="_blank" rel="noopener"><img src="mocks/04-segredo-criado.png" alt="Segredo criado, exibido uma única vez" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Tela 4.</b> Segredo criado, exibido uma única vez</p></div>
+<div class="shot"><a href="mocks/05-webhooks.png" target="_blank" rel="noopener"><img src="mocks/05-webhooks.png" alt="Webhooks: configuração, eventos e entregas recentes" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Tela 5.</b> Webhooks: configuração, eventos e entregas recentes</p></div>
+<div class="shot"><a href="mocks/06-remetentes.png" target="_blank" rel="noopener"><img src="mocks/06-remetentes.png" alt="Remetentes: mensagem direta e canais, com as integrações que os usam" width="1440" height="1000" loading="lazy"></a><p class="cap"><b>Tela 6.</b> Remetentes: mensagem direta e canais, com as integrações que os usam</p></div>
+<div class="shot"><a href="mocks/07-canal-migracao.png" target="_blank" rel="noopener"><img src="mocks/07-canal-migracao.png" alt="Página do canal com aviso de migração das credenciais" width="1440" height="760" loading="lazy"></a><p class="cap"><b>Tela 7.</b> Página do canal com aviso de migração das credenciais</p></div>
 </div>
-<p class="cap">Esboço ilustrativo da página de um app, com valores de exemplo.</p>
 <h3>Telas</h3>
 <div class="screens">
   <div class="screen"><h5>Visão geral</h5><span class="path">/developer</span><ul><li>Mensagens enviadas, entregues e com falha nas últimas 24 h</li><li>Saúde dos webhooks</li><li>Alertas: secret antigo em uso, webhook falhando</li></ul></div>

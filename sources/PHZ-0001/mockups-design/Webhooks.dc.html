@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Desenvolvedor · Webhooks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#141414;background:#f2f2f2}
+a{color:#1f5fc4;text-decoration:none}a:hover{text-decoration:underline}
+.bar{height:64px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #ececec}
+.logo{font-weight:800;font-size:26px;color:#ef6a1f;letter-spacing:-.02em}
+.pill{background:#c4500d;color:#fff;font-weight:600;font-size:13px;padding:5px 14px;border-radius:999px}
+.side{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side .it{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:#2a2a2a}
+.side .it .chev{margin-left:auto;color:#888}
+.side .on{background:#fff;color:#b8470b;font-weight:600}
+.side .sub{padding-left:42px;color:#555;font-size:14.5px}
+.side .new{background:#fdebdd;color:#8f3a07;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.card{background:#fff;border-radius:14px;padding:24px}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:#c4500d;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.btn2{display:inline-flex;align-items:center;gap:8px;background:#fff;color:#222;border:1px solid #d9d9d9;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;border-bottom:1px solid #ececec}
+.tbl td{padding:14px;border-bottom:1px solid #f1f1f1;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:#e1f4e6;color:#14612a}.warn{background:#fff0d6;color:#7a4300}.bad{background:#fde2e0;color:#8c1d16}.off{background:#ececec;color:#4a4a4a}
+.in{width:100%;box-sizing:border-box;border:1px solid #d6d6d6;border-radius:8px;background:#fff;padding:11px 12px;font-size:14.5px;font-family:inherit;color:#141414}
+.fl{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+.hint{font-size:13px;color:#5f5f5f;margin:6px 0 0}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f1f1f1;font-size:14.5px}
+.chk:last-child{border-bottom:0}
+.chk input{margin-top:3px;width:17px;height:17px;accent-color:#c4500d}
+</style>
+</helmet>
+<div style="min-height:1000px;display:flex;flex-direction:column">
+  <div class="bar">
+    <div style="display:flex;align-items:center;gap:12px"><span class="logo">PHIZ</span><span class="pill">Open Platform</span></div>
+    <div style="display:flex;align-items:center;gap:26px;font-size:14px"><span style="color:#1f5fc4">Português ▾</span><span style="font-weight:600">Loja Exemplo ▾</span></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;flex:1">
+    <aside style="flex:0 0 256px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;box-sizing:border-box">
+      <nav class="side" aria-label="Menu">
+        <div class="it">Página Inicial</div>
+        <div class="it">Gestão de Pagamentos<span class="chev">⌄</span></div>
+        <div class="it">Miniapp<span class="chev">⌄</span></div>
+        <div class="it">Canal<span class="chev">⌄</span></div>
+        <div class="it" style="font-weight:600">Desenvolvedor<span class="new">Novo</span><span class="chev">⌃</span></div>
+        <div class="it sub">Visão geral</div>
+        <div class="it sub">Integrações</div>
+        <div class="it sub on">Webhooks</div>
+        <div class="it sub">Remetentes</div>
+        <div class="it">Configurações<span class="chev">⌄</span></div>
+      </nav>
+    </aside>
+    <main style="flex:999 1 560px;min-width:0;padding:28px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+        <div>
+          <h1 style="margin:0;font-size:28px">Webhooks</h1>
+          <p style="margin:6px 0 0;color:#5f5f5f;font-size:15px;max-width:62ch">Um endereço da sua conta recebe as mensagens dos usuários e os status de entrega. Todas as chamadas são assinadas.</p>
+        </div>
+        <span class="tag ok" style="font-size:13px;padding:5px 14px">Webhook verificado</span>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+        <section class="card" style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:18px" aria-labelledby="w-h">
+          <h2 id="w-h" style="margin:0;font-size:18px">Configuração</h2>
+          <div>
+            <label class="fl" for="u">URL de callback</label>
+            <input id="u" class="in mono" value="https://api.lojaexemplo.com.br/phiz/webhook">
+            <p class="hint">Precisa ser HTTPS. Ao salvar, a PHIZ chama a URL com um GET de verificação (hub.mode, hub.verify_token, hub.challenge).</p>
+          </div>
+          <div>
+            <label class="fl" for="v">Token de verificação</label>
+            <input id="v" class="in mono" value="lojaexemplo-verify-2026">
+            <p class="hint">Você escolhe o valor. Sua URL deve devolver o hub.challenge quando o token coincidir.</p>
+          </div>
+          <div>
+            <div class="fl">Segredo de assinatura</div>
+            <div class="mono" style="background:#f6f6f6;border:1px solid #e3e3e3;border-radius:8px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center"><span>phzwh_••••••••••••c41e</span><a href="#" style="font-size:13px;font-family:-apple-system,system-ui,sans-serif">Gerar novo</a></div>
+            <p class="hint">Valide o cabeçalho X-Phiz-Signature-256 (HMAC-SHA256 de timestamp + corpo) em cada chamada.</p>
+          </div>
+          <fieldset style="border:0;padding:0;margin:0">
+            <legend class="fl" style="padding:0">Eventos</legend>
+            <label class="chk"><input type="checkbox" checked><span><span class="mono" style="font-weight:600">messages</span><br><span style="color:#5f5f5f;font-size:13.5px">Mensagens recebidas dos usuários</span></span></label>
+            <label class="chk"><input type="checkbox" checked><span><span class="mono" style="font-weight:600">message_status</span><br><span style="color:#5f5f5f;font-size:13.5px">Enviada, entregue, lida ou falha</span></span></label>
+            <label class="chk"><input type="checkbox" checked><span><span class="mono" style="font-weight:600">sender_update</span><br><span style="color:#5f5f5f;font-size:13.5px">Mudanças em remetentes e canais</span></span></label>
+            <label class="chk"><input type="checkbox"><span><span class="mono" style="font-weight:600">account_update</span><br><span style="color:#5f5f5f;font-size:13.5px">Mudanças na conta do comerciante</span></span></label>
+          </fieldset>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #ececec;padding-top:18px">
+            <button class="btn" type="button">Verificar e salvar</button>
+            <button class="btn2" type="button">Enviar evento de teste</button>
+          </div>
+        </section>
+
+        <section class="card" style="flex:1.4 1 480px;min-width:0" aria-labelledby="d-h">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <h2 id="d-h" style="margin:0;font-size:18px">Entregas recentes</h2>
+            <div class="mono" style="font-size:12.5px;color:#5f5f5f">Reenvio automático por até 24 h</div>
+          </div>
+          <div style="overflow-x:auto">
+          <table class="tbl" style="min-width:520px">
+            <thead><tr><th>Horário</th><th>Evento</th><th>Resposta</th><th>Tentativas</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>15:41:08</td><td class="mono">messages</td><td><span class="tag ok">200</span></td><td>1</td><td></td></tr>
+              <tr><td>15:40:52</td><td class="mono">message_status</td><td><span class="tag ok">200</span></td><td>1</td><td></td></tr>
+              <tr><td>15:38:17</td><td class="mono">message_status</td><td><span class="tag warn">503</span></td><td>3</td><td><a href="#">Reenviar</a></td></tr>
+              <tr><td>15:12:44</td><td class="mono">messages</td><td><span class="tag ok">200</span></td><td>1</td><td></td></tr>
+              <tr><td>14:57:03</td><td class="mono">sender_update</td><td><span class="tag bad">Sem resposta</span></td><td>6</td><td><a href="#">Reenviar</a></td></tr>
+              <tr><td>14:20:31</td><td class="mono">message_status</td><td><span class="tag ok">200</span></td><td>1</td><td></td></tr>
+            </tbody>
+          </table>
+          </div>
+          <p class="hint" style="margin-top:14px">Selecione uma entrega para ver o corpo enviado, os cabeçalhos e a resposta. Dá para reenviar eventos das últimas 72 h.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

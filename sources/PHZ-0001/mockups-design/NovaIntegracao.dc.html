@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Desenvolvedor · Nova integração</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#141414;background:#f2f2f2}
+a{color:#1f5fc4;text-decoration:none}a:hover{text-decoration:underline}
+.bar{height:64px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #ececec}
+.logo{font-weight:800;font-size:26px;color:#ef6a1f;letter-spacing:-.02em}
+.pill{background:#c4500d;color:#fff;font-weight:600;font-size:13px;padding:5px 14px;border-radius:999px}
+.side{display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side .it{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:#2a2a2a}
+.side .it .chev{margin-left:auto;color:#888}
+.side .on{background:#fff;color:#b8470b;font-weight:600}
+.side .sub{padding-left:42px;color:#555;font-size:14.5px}
+.side .new{background:#fdebdd;color:#8f3a07;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.card{background:#fff;border-radius:14px;padding:24px}
+.lbl{font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.05em}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:#c4500d;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.btn2{display:inline-flex;align-items:center;gap:8px;background:#fff;color:#222;border:1px solid #d9d9d9;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#6b6b6b;text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;border-bottom:1px solid #ececec}
+.tbl td{padding:15px 14px;border-bottom:1px solid #f1f1f1;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:#e1f4e6;color:#14612a}.warn{background:#fff0d6;color:#7a4300}.off{background:#ececec;color:#4a4a4a}
+.sc{display:inline-block;background:#f3f3f3;border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:#333}
+.seg{display:inline-flex;background:#e6e6e6;border-radius:10px;padding:3px}
+.seg span{padding:7px 16px;border-radius:8px;font-size:14px;font-weight:600;color:#555}
+.seg .a{background:#fff;color:#141414}
+.in{width:100%;box-sizing:border-box;border:1px solid #d6d6d6;border-radius:8px;background:#fff;padding:11px 12px;font-size:14.5px;font-family:inherit;color:#141414}
+.fl{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+.hint{font-size:13px;color:#5f5f5f;margin:6px 0 0}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f1f1f1;font-size:14.5px}
+.chk:last-child{border-bottom:0}
+.chk input{margin-top:3px;width:17px;height:17px;accent-color:#c4500d}
+</style>
+</helmet>
+<div style="min-height:1000px;display:flex;flex-direction:column;position:relative">
+  <div class="bar">
+    <div style="display:flex;align-items:center;gap:12px"><span class="logo">PHIZ</span><span class="pill">Open Platform</span></div>
+    <div style="display:flex;align-items:center;gap:26px;font-size:14px"><span style="color:#1f5fc4">Português ▾</span><span style="font-weight:600">Loja Exemplo ▾</span></div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;flex:1">
+    <aside style="flex:0 0 256px;background:#f8f8f8;border-right:1px solid #ececec;padding:16px 12px;box-sizing:border-box">
+      <nav class="side" aria-label="Menu">
+        <div class="it">Página Inicial</div>
+        <div class="it">Gestão de Pagamentos<span class="chev">⌄</span></div>
+        <div class="it">Miniapp<span class="chev">⌄</span></div>
+        <div class="it">Canal<span class="chev">⌄</span></div>
+        <div class="it" style="font-weight:600">Desenvolvedor<span class="new">Novo</span><span class="chev">⌃</span></div>
+        <div class="it sub">Visão geral</div>
+        <div class="it sub on">Integrações</div>
+        <div class="it sub">Webhooks</div>
+        <div class="it sub">Remetentes</div>
+        <div class="it">Configurações<span class="chev">⌄</span></div>
+      </nav>
+    </aside>
+    <main style="flex:999 1 560px;min-width:0;padding:28px 36px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+        <h1 style="margin:0;font-size:28px">Integrações</h1>
+        <button class="btn" type="button">+ Nova integração</button>
+      </div>
+      <section class="card">
+        <table class="tbl">
+          <thead><tr><th>Integração</th><th>Client ID</th><th>Remetentes</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Blip · Atendimento</b></td><td class="mono">phz_cid_9d31c0a7</td><td>Mensagem direta + 1 canal</td><td><span class="tag ok">Ativa</span></td></tr>
+            <tr><td><b>Salesforce · Marketing</b></td><td class="mono">phz_cid_41be7f20</td><td>Mensagem direta</td><td><span class="tag ok">Ativa</span></td></tr>
+            <tr><td><b>Backoffice interno</b></td><td class="mono">phz_cid_c7a2d9e5</td><td>Canal Ofertas</td><td><span class="tag warn">Segredo em rotação</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <div style="position:absolute;inset:0;background:rgba(20,20,20,.55);display:flex;justify-content:center;align-items:flex-start;padding:40px 16px;box-sizing:border-box">
+    <div role="dialog" aria-label="Nova integração" style="background:#fff;border-radius:16px;width:100%;max-width:660px;padding:28px 30px;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:20px">
+      <div>
+        <h2 style="margin:0;font-size:22px">Nova integração</h2>
+        <p style="margin:6px 0 0;color:#5f5f5f;font-size:14.5px">Cria um client ID e um segredo para um sistema ou parceiro acessar a API em nome da sua conta.</p>
+      </div>
+      <div>
+        <label class="fl" for="n">Nome da integração</label>
+        <input id="n" class="in" value="CRM de vendas">
+        <p class="hint">Aparece na lista e nos logs. Use o nome do sistema ou do parceiro.</p>
+      </div>
+      <fieldset style="border:0;padding:0;margin:0">
+        <legend class="fl" style="padding:0">Escopos</legend>
+        <label class="chk"><input type="checkbox" checked><span><span class="mono" style="font-weight:600">messages:send</span><br><span style="color:#5f5f5f;font-size:13.5px">Enviar mensagens</span></span></label>
+        <label class="chk"><input type="checkbox" checked><span><span class="mono" style="font-weight:600">messages:read</span><br><span style="color:#5f5f5f;font-size:13.5px">Consultar mensagens e status de entrega</span></span></label>
+        <label class="chk"><input type="checkbox"><span><span class="mono" style="font-weight:600">webhooks:manage</span><br><span style="color:#5f5f5f;font-size:13.5px">Configurar webhooks pela API</span></span></label>
+        <label class="chk"><input type="checkbox"><span><span class="mono" style="font-weight:600">account:read</span><br><span style="color:#5f5f5f;font-size:13.5px">Ler dados da conta e dos remetentes</span></span></label>
+      </fieldset>
+      <fieldset style="border:0;padding:0;margin:0">
+        <legend class="fl" style="padding:0">Remetentes permitidos</legend>
+        <label class="chk"><input type="checkbox" checked><span>Mensagem direta<br><span style="color:#5f5f5f;font-size:13.5px">Envia como Loja Exemplo, sem precisar de canal.</span></span></label>
+        <label class="chk"><input type="checkbox"><span>Loja Exemplo · Ofertas<br><span style="color:#5f5f5f;font-size:13.5px">Canal 1231</span></span></label>
+      </fieldset>
+      <div>
+        <div class="fl">Ambiente</div>
+        <div class="seg" role="group" aria-label="Ambiente"><span class="a">Produção</span><span>Teste</span></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:12px;border-top:1px solid #ececec;padding-top:18px">
+        <button class="btn2" type="button">Cancelar</button>
+        <button class="btn" type="button">Criar integração</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
