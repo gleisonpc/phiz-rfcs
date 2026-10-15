@@ -1,0 +1,714 @@
+{
+ "Português ▾": [
+  "English ▾",
+  "简体中文 ▾"
+ ],
+ "Loja Exemplo ▾": [
+  "Example Store ▾",
+  "示例商店 ▾"
+ ],
+ "‹ &nbsp;Todos os canais": [
+  "‹ &nbsp;All channels",
+  "‹ &nbsp;全部频道"
+ ],
+ "LO": [
+  "EO",
+  "优"
+ ],
+ "LE": [
+  "ES",
+  "示"
+ ],
+ "Loja Exemplo · Ofertas": [
+  "Example Store · Offers",
+  "示例商店 · 优惠"
+ ],
+ "2 inscritos": [
+  "2 subscribers",
+  "2 位订阅者"
+ ],
+ "Informações do canal": [
+  "Channel information",
+  "频道信息"
+ ],
+ "Postar conteúdo": [
+  "Post content",
+  "发布内容"
+ ],
+ "Configuração de Negócio": [
+  "Business settings",
+  "业务设置"
+ ],
+ "Mini programa": [
+  "Mini program",
+  "小程序"
+ ],
+ "Robô de IA": [
+  "AI bot",
+  "AI 机器人"
+ ],
+ "Configuração de Desenvolvimento": [
+  "Development settings",
+  "开发配置"
+ ],
+ "As credenciais da API agora ficam na conta do comerciante": [
+  "API credentials now live in the merchant account",
+  "API 凭证现在统一在商户账户中管理"
+ ],
+ "Crie integrações com client ID e segredo em": [
+  "Create integrations with a client ID and secret under",
+  "在以下位置创建带有 client ID 和密钥的集成："
+ ],
+ "Desenvolvedor": [
+  "Developer",
+  "开发者"
+ ],
+ ", escolha quais remetentes cada uma pode usar e este canal continua disponível como remetente. As chaves abaixo seguem funcionando até": [
+  ", choose which senders each one can use, and this channel stays available as a sender. The keys below keep working until",
+  "，并为每个集成选择可用的发送方，此频道仍可作为发送方。以下密钥在以下日期前继续有效："
+ ],
+ "[DATA]": [
+  "[DATE]",
+  "[日期]"
+ ],
+ "Ir para Desenvolvedor": [
+  "Go to Developer",
+  "前往开发者"
+ ],
+ "Chave de desenvolvedor": [
+  "Developer key",
+  "开发者密钥"
+ ],
+ "Será descontinuada em [DATA]": [
+  "Will be discontinued on [DATE]",
+  "将于 [日期] 停用"
+ ],
+ "Copiar": [
+  "Copy",
+  "复制"
+ ],
+ "Para maior segurança, não é exibido em texto claro. Se for esquecido, precisa ser redefinido.": [
+  "For security, it is not shown in clear text. If forgotten, it must be reset.",
+  "为了安全，不以明文显示。如果遗忘，需要重置。"
+ ],
+ "Redefinir": [
+  "Reset",
+  "重置"
+ ],
+ "O que muda para quem já integra": [
+  "What changes for existing integrations",
+  "对现有集成方的影响"
+ ],
+ "Integrações existentes continuam funcionando durante a migração.": [
+  "Existing integrations keep working during the migration.",
+  "迁移期间，现有集成继续正常工作。"
+ ],
+ "Novas integrações usam client ID e segredo da conta do comerciante.": [
+  "New integrations use the merchant account's client ID and secret.",
+  "新的集成使用商户账户的 client ID 和密钥。"
+ ],
+ "Este canal aparece em": [
+  "This channel appears in",
+  "此频道将显示在"
+ ],
+ "Desenvolvedor › Remetentes": [
+  "Developer › Senders",
+  "开发者 › 发送方"
+ ],
+ "com o": [
+  "with",
+  "，其"
+ ],
+ "Menu do canal": [
+  "Channel menu",
+  "频道菜单"
+ ],
+ "Canal · Configuração de Desenvolvimento": [
+  "Channel · Development settings",
+  "频道 · 开发配置"
+ ],
+ "Página Inicial": [
+  "Home",
+  "首页"
+ ],
+ "Gestão de Pagamentos": [
+  "Payment management",
+  "支付管理"
+ ],
+ "Canal": [
+  "Channel",
+  "频道"
+ ],
+ "Novo": [
+  "New",
+  "新"
+ ],
+ "Visão geral": [
+  "Overview",
+  "概览"
+ ],
+ "Integrações": [
+  "Integrations",
+  "集成"
+ ],
+ "Remetentes": [
+  "Senders",
+  "发送方"
+ ],
+ "Configurações": [
+  "Settings",
+  "设置"
+ ],
+ "&nbsp;/&nbsp; Blip · Atendimento": [
+  "&nbsp;/&nbsp; Blip · Support",
+  "&nbsp;/&nbsp; Blip · 客服"
+ ],
+ "Blip · Atendimento": [
+  "Blip · Support",
+  "Blip · 客服"
+ ],
+ "Ativa": [
+  "Active",
+  "已启用"
+ ],
+ "Produção": [
+  "Production",
+  "生产"
+ ],
+ "Editar": [
+  "Edit",
+  "编辑"
+ ],
+ "Desativar": [
+  "Disable",
+  "停用"
+ ],
+ "Credenciais": [
+  "Credentials",
+  "凭证"
+ ],
+ "Use o client ID e um segredo para obter um token de acesso (OAuth 2.0, client_credentials).": [
+  "Use the client ID and a secret to get an access token (OAuth 2.0, client_credentials).",
+  "使用 client ID 和密钥获取访问令牌（OAuth 2.0，client_credentials）。"
+ ],
+ "URL do token": [
+  "Token URL",
+  "令牌 URL"
+ ],
+ "ID do comerciante": [
+  "Merchant ID",
+  "商户 ID"
+ ],
+ "Segredos": [
+  "Secrets",
+  "密钥"
+ ],
+ "Gerar novo segredo": [
+  "Generate new secret",
+  "生成新密钥"
+ ],
+ "Até dois segredos ficam ativos ao mesmo tempo, para trocar sem interromper o envio. O segredo antigo expira 24 h depois de gerar o novo.": [
+  "Up to two secrets can be active at once, so you can rotate without interrupting delivery. The old secret expires 24 h after you generate the new one.",
+  "最多可同时启用两个密钥，便于在不中断发送的情况下轮换。旧密钥在生成新密钥 24 小时后失效。"
+ ],
+ "Segredo": [
+  "Secret",
+  "密钥"
+ ],
+ "Criado em": [
+  "Created on",
+  "创建时间"
+ ],
+ "Último uso": [
+  "Last used",
+  "最近使用"
+ ],
+ "Status": [
+  "Status",
+  "状态"
+ ],
+ "há 2 min": [
+  "2 min ago",
+  "2 分钟前"
+ ],
+ "Ativo": [
+  "Active",
+  "已启用"
+ ],
+ "Revogar": [
+  "Revoke",
+  "吊销"
+ ],
+ "há 1 h": [
+  "1 h ago",
+  "1 小时前"
+ ],
+ "Expira em 23 h": [
+  "Expires in 23 h",
+  "23 小时后失效"
+ ],
+ "Revogar agora": [
+  "Revoke now",
+  "立即吊销"
+ ],
+ "Testar o token": [
+  "Test the token",
+  "测试令牌"
+ ],
+ "Escopos": [
+  "Scopes",
+  "权限范围"
+ ],
+ "O token só permite as ações listadas aqui.": [
+  "The token only allows the actions listed here.",
+  "令牌仅允许此处列出的操作。"
+ ],
+ "Remetentes permitidos": [
+  "Allowed senders",
+  "可用发送方"
+ ],
+ "Mensagem direta": [
+  "Direct message",
+  "直接消息"
+ ],
+ "Loja Exemplo": [
+  "Example Store",
+  "示例商店"
+ ],
+ "Canal 1231": [
+  "Channel 1231",
+  "频道 1231"
+ ],
+ "Atividade recente": [
+  "Recent activity",
+  "最近活动"
+ ],
+ "Token emitido": [
+  "Token issued",
+  "已签发令牌"
+ ],
+ "há 2 min · 1 h de validade": [
+  "2 min ago · valid for 1 h",
+  "2 分钟前 · 有效期 1 小时"
+ ],
+ "Segredo gerado": [
+  "Secret generated",
+  "已生成密钥"
+ ],
+ "14/10/2026 · por gleison@lojaexemplo.com": [
+  "Oct 14, 2026 · by gleison@lojaexemplo.com",
+  "2026/10/14 · 由 gleison@lojaexemplo.com"
+ ],
+ "Escopo webhooks:manage adicionado": [
+  "Scope webhooks:manage added",
+  "已添加范围 webhooks:manage"
+ ],
+ "Menu": [
+  "Menu",
+  "菜单"
+ ],
+ "Trilha": [
+  "Breadcrumb",
+  "导航路径"
+ ],
+ "Desenvolvedor · Detalhe da integração": [
+  "Developer · Integration details",
+  "开发者 · 集成详情"
+ ],
+ "Credenciais, webhooks e remetentes da conta do comerciante. Tudo o que seus sistemas e parceiros precisam para enviar e receber mensagens pela API.": [
+  "Credentials, webhooks and senders for the merchant account. Everything your systems and partners need to send and receive messages through the API.",
+  "商户账户的凭证、Webhook 和发送方。您的系统和合作伙伴通过 API 收发消息所需的一切。"
+ ],
+ "Teste": [
+  "Test",
+  "测试"
+ ],
+ "URL base da API": [
+  "API base URL",
+  "API 基础 URL"
+ ],
+ "Ver documentação": [
+  "View documentation",
+  "查看文档"
+ ],
+ "Situação": [
+  "Status",
+  "运行状况"
+ ],
+ "&nbsp; 3 integrações": [
+  "&nbsp; 3 integrations",
+  "&nbsp; 3 个集成"
+ ],
+ "&nbsp; Webhook verificado": [
+  "&nbsp; Webhook verified",
+  "&nbsp; Webhook 已验证"
+ ],
+ "Cada sistema ou parceiro (CRM, BSP, backoffice) tem seu próprio client ID e segredo.": [
+  "Each system or partner (CRM, BSP, back office) has its own client ID and secret.",
+  "每个系统或合作伙伴（CRM、BSP、后台）都有各自的 client ID 和密钥。"
+ ],
+ "+ Nova integração": [
+  "+ New integration",
+  "+ 新建集成"
+ ],
+ "Integração": [
+  "Integration",
+  "集成"
+ ],
+ "Mensagem direta + 1 canal": [
+  "Direct message + 1 channel",
+  "直接消息 + 1 个频道"
+ ],
+ "há 3 h": [
+  "3 h ago",
+  "3 小时前"
+ ],
+ "Backoffice interno": [
+  "Internal back office",
+  "内部后台"
+ ],
+ "Canal Ofertas": [
+  "Offers channel",
+  "优惠频道"
+ ],
+ "há 12 dias": [
+  "12 days ago",
+  "12 天前"
+ ],
+ "Segredo em rotação": [
+  "Secret rotating",
+  "密钥轮换中"
+ ],
+ "Primeiros passos": [
+  "First steps",
+  "入门步骤"
+ ],
+ "Feito": [
+  "Done",
+  "已完成"
+ ],
+ "Criar uma integração": [
+  "Create an integration",
+  "创建集成"
+ ],
+ "Gere o client ID e o segredo.": [
+  "Generate the client ID and secret.",
+  "生成 client ID 和密钥。"
+ ],
+ "Configurar o webhook": [
+  "Set up the webhook",
+  "配置 Webhook"
+ ],
+ "Receba mensagens e status de entrega.": [
+  "Receive messages and delivery statuses.",
+  "接收消息和送达状态。"
+ ],
+ "Pendente": [
+  "Pending",
+  "待完成"
+ ],
+ "Enviar uma mensagem de teste": [
+  "Send a test message",
+  "发送测试消息"
+ ],
+ "Use o ambiente de Teste e o exemplo ao lado.": [
+  "Use the Test environment and the example alongside.",
+  "使用测试环境和旁边的示例。"
+ ],
+ "Enviar uma mensagem": [
+  "Send a message",
+  "发送消息"
+ ],
+ "Ambiente": [
+  "Environment",
+  "环境"
+ ],
+ "Desenvolvedor · Visão geral": [
+  "Developer · Overview",
+  "开发者 · 概览"
+ ],
+ "Nova integração": [
+  "New integration",
+  "新建集成"
+ ],
+ "Cria um client ID e um segredo para um sistema ou parceiro acessar a API em nome da sua conta.": [
+  "Creates a client ID and a secret so a system or partner can access the API on behalf of your account.",
+  "创建 client ID 和密钥，供系统或合作伙伴代表您的账户访问 API。"
+ ],
+ "Nome da integração": [
+  "Integration name",
+  "集成名称"
+ ],
+ "Aparece na lista e nos logs. Use o nome do sistema ou do parceiro.": [
+  "Shown in the list and in logs. Use the system or partner name.",
+  "显示在列表和日志中。请使用系统或合作伙伴的名称。"
+ ],
+ "Enviar mensagens": [
+  "Send messages",
+  "发送消息"
+ ],
+ "Consultar mensagens e status de entrega": [
+  "Query messages and delivery status",
+  "查询消息和送达状态"
+ ],
+ "Configurar webhooks pela API": [
+  "Configure webhooks through the API",
+  "通过 API 配置 Webhook"
+ ],
+ "Ler dados da conta e dos remetentes": [
+  "Read account and sender data",
+  "读取账户和发送方数据"
+ ],
+ "Envia como Loja Exemplo, sem precisar de canal.": [
+  "Sends as Example Store, no channel needed.",
+  "以“示例商店”的身份发送，无需频道。"
+ ],
+ "Cancelar": [
+  "Cancel",
+  "取消"
+ ],
+ "Criar integração": [
+  "Create integration",
+  "创建集成"
+ ],
+ "CRM de vendas": [
+  "Sales CRM",
+  "销售 CRM"
+ ],
+ "Desenvolvedor · Nova integração": [
+  "Developer · New integration",
+  "开发者 · 新建集成"
+ ],
+ "O remetente é quem aparece para o usuário no PhizChat. Sua conta envia como ela mesma (mensagem direta) e, se tiver canais, também por eles.": [
+  "The sender is who the user sees in PhizChat. Your account sends as itself (direct message) and, if it has channels, through them too.",
+  "发送方是用户在 PhizChat 中看到的对象。您的账户可以以自身名义发送（直接消息），如有频道，也可以通过频道发送。"
+ ],
+ "Remetentes da conta": [
+  "Account senders",
+  "账户发送方"
+ ],
+ "Use o": [
+  "Use the",
+  "使用"
+ ],
+ "na rota": [
+  "in the route",
+  "，用于路由"
+ ],
+ "Remetente": [
+  "Sender",
+  "发送方"
+ ],
+ "Tipo": [
+  "Type",
+  "类型"
+ ],
+ "Integrações com acesso": [
+  "Integrations with access",
+  "有权限的集成"
+ ],
+ "Nome e foto de Informações do comerciante": [
+  "Name and photo from Merchant information",
+  "名称和头像来自商户信息"
+ ],
+ "Padrão": [
+  "Default",
+  "默认"
+ ],
+ "Canal · 2 inscritos": [
+  "Channel · 2 subscribers",
+  "频道 · 2 位订阅者"
+ ],
+ "Como o usuário vê": [
+  "How the user sees it",
+  "用户看到的样子"
+ ],
+ "Olá! Seu pedido saiu para entrega.": [
+  "Hi! Your order is out for delivery.",
+  "您好！您的订单已发出配送。"
+ ],
+ "Mensagem direta: aparece como conversa com a loja, sem canal.": [
+  "Direct message: appears as a conversation with the store, no channel.",
+  "直接消息：显示为与商店的对话，无需频道。"
+ ],
+ "Boas práticas": [
+  "Good practices",
+  "最佳实践"
+ ],
+ "Dê a cada integração só os remetentes de que ela precisa.": [
+  "Give each integration only the senders it needs.",
+  "只为每个集成分配其所需的发送方。"
+ ],
+ "Os canais continuam sendo criados em": [
+  "Channels are still created under",
+  "频道仍在以下位置创建："
+ ],
+ "Canal › Meus Canais": [
+  "Channel › My Channels",
+  "频道 › 我的频道"
+ ],
+ "Mudanças em remetentes geram o evento": [
+  "Changes to senders trigger the",
+  "发送方变更会触发"
+ ],
+ "no webhook.": [
+  "event on the webhook.",
+  "事件并推送到 Webhook。"
+ ],
+ "Desenvolvedor · Remetentes": [
+  "Developer · Senders",
+  "开发者 · 发送方"
+ ],
+ "Integrações &nbsp;/&nbsp; CRM de vendas": [
+  "Integrations &nbsp;/&nbsp; Sales CRM",
+  "集成 &nbsp;/&nbsp; 销售 CRM"
+ ],
+ "Segredo criado": [
+  "Secret created",
+  "密钥已创建"
+ ],
+ "· Produção": [
+  "· Production",
+  "· 生产"
+ ],
+ "Copie o segredo agora.": [
+  "Copy the secret now.",
+  "请立即复制密钥。"
+ ],
+ "Por segurança, ele não será exibido de novo. Se você perder, gere um novo segredo.": [
+  "For security, it will not be shown again. If you lose it, generate a new secret.",
+  "出于安全考虑，密钥不会再次显示。如果丢失，请生成新密钥。"
+ ],
+ "Já guardei o segredo em um local seguro.": [
+  "I have stored the secret in a safe place.",
+  "我已将密钥保存在安全的位置。"
+ ],
+ "Concluir": [
+  "Done",
+  "完成"
+ ],
+ "Desenvolvedor · Segredo criado": [
+  "Developer · Secret created",
+  "开发者 · 密钥已创建"
+ ],
+ "Um endereço da sua conta recebe as mensagens dos usuários e os status de entrega. Todas as chamadas são assinadas.": [
+  "One address on your account receives user messages and delivery statuses. Every call is signed.",
+  "您账户的一个地址用于接收用户消息和送达状态。所有调用均已签名。"
+ ],
+ "Webhook verificado": [
+  "Webhook verified",
+  "Webhook 已验证"
+ ],
+ "Configuração": [
+  "Setup",
+  "配置"
+ ],
+ "URL de callback": [
+  "Callback URL",
+  "回调 URL"
+ ],
+ "Precisa ser HTTPS. Ao salvar, a PHIZ chama a URL com um GET de verificação (hub.mode, hub.verify_token, hub.challenge).": [
+  "Must be HTTPS. On save, PHIZ calls the URL with a verification GET (hub.mode, hub.verify_token, hub.challenge).",
+  "必须为 HTTPS。保存时，PHIZ 会用验证 GET 请求调用该 URL（hub.mode、hub.verify_token、hub.challenge）。"
+ ],
+ "Token de verificação": [
+  "Verify token",
+  "验证令牌"
+ ],
+ "Você escolhe o valor. Sua URL deve devolver o hub.challenge quando o token coincidir.": [
+  "You choose the value. Your URL must return hub.challenge when the token matches.",
+  "值由您自行设定。令牌匹配时，您的 URL 必须返回 hub.challenge。"
+ ],
+ "Segredo de assinatura": [
+  "Signing secret",
+  "签名密钥"
+ ],
+ "Gerar novo": [
+  "Generate new",
+  "生成新的"
+ ],
+ "Valide o cabeçalho X-Phiz-Signature-256 (HMAC-SHA256 de timestamp + corpo) em cada chamada.": [
+  "Validate the X-Phiz-Signature-256 header (HMAC-SHA256 of timestamp + body) on every call.",
+  "请在每次调用中验证 X-Phiz-Signature-256 请求头（时间戳 + 请求体的 HMAC-SHA256）。"
+ ],
+ "Eventos": [
+  "Events",
+  "事件"
+ ],
+ "Mensagens recebidas dos usuários": [
+  "Messages received from users",
+  "收到的用户消息"
+ ],
+ "Enviada, entregue, lida ou falha": [
+  "Sent, delivered, read or failed",
+  "已发送、已送达、已读或失败"
+ ],
+ "Mudanças em remetentes e canais": [
+  "Changes to senders and channels",
+  "发送方和频道的变更"
+ ],
+ "Mudanças na conta do comerciante": [
+  "Changes to the merchant account",
+  "商户账户的变更"
+ ],
+ "Verificar e salvar": [
+  "Verify and save",
+  "验证并保存"
+ ],
+ "Enviar evento de teste": [
+  "Send test event",
+  "发送测试事件"
+ ],
+ "Entregas recentes": [
+  "Recent deliveries",
+  "最近投递"
+ ],
+ "Reenvio automático por até 24 h": [
+  "Automatic retries for up to 24 h",
+  "最长 24 小时自动重试"
+ ],
+ "Horário": [
+  "Time",
+  "时间"
+ ],
+ "Evento": [
+  "Event",
+  "事件"
+ ],
+ "Resposta": [
+  "Response",
+  "响应"
+ ],
+ "Tentativas": [
+  "Attempts",
+  "尝试次数"
+ ],
+ "Reenviar": [
+  "Replay",
+  "重发"
+ ],
+ "Sem resposta": [
+  "No response",
+  "无响应"
+ ],
+ "Selecione uma entrega para ver o corpo enviado, os cabeçalhos e a resposta. Dá para reenviar eventos das últimas 72 h.": [
+  "Select a delivery to see the body sent, the headers and the response. You can replay events from the last 72 h.",
+  "选择一条投递可查看发送的请求体、请求头和响应。可重发最近 72 小时内的事件。"
+ ],
+ "Desenvolvedor · Webhooks": [
+  "Developer · Webhooks",
+  "开发者 · Webhook"
+ ],
+ "14/10/2026": [
+  "Oct 14, 2026",
+  "2026/10/14"
+ ],
+ "02/07/2026": [
+  "Jul 2, 2026",
+  "2026/07/02"
+ ],
+ "03/07/2026": [
+  "Jul 3, 2026",
+  "2026/07/03"
+ ]
+}
