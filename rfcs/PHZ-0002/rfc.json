@@ -11,8 +11,15 @@
     "zh": "用新的 GruPag API 替换现有 CredPay 路由（收银台、令牌化、预授权、PIX、3DS），采用 API Key、以分为单位的金额，并通过路由配置控制切换。"
   },
   "status": "draft",
-  "authors": ["Gleison"],
-  "reviewers": [],
+  "authors": [
+    "Gleison"
+  ],
+  "reviewers": [
+    "Pedro Bettani",
+    "Luciana Geromel",
+    "Richard Liang",
+    "Henry Wu"
+  ],
   "created": "2026-10-16",
   "updated": "2026-10-16"
 }
