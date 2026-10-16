@@ -6,6 +6,8 @@
 -- LER comentários visíveis e CRIAR comentários novos. Ninguém edita nem apaga pela página.
 -- Moderação: no Table Editor, marque "hidden = true" no comentário (ou apague a linha).
 
+create extension if not exists pgcrypto with schema extensions;
+
 create table if not exists public.rfc_comments (
   id          uuid primary key default gen_random_uuid(),
   rfc_id      text not null check (rfc_id ~ '^PHZ-[0-9]{4}$'),
