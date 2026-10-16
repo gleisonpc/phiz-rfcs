@@ -60,7 +60,7 @@ def build_rfc(d, meta):
              + "".join(f'<span class="lang-st" data-l="{l}">{e(STATUS[st][l])}</span>' for l in LANGS) + "</span>")
     page = re.sub(r'(<span class="rfcno">[^<]*</span>)', r"\1" + badge, page, count=1)
     page = page.replace("</title>", "</title>\n<link rel=\"stylesheet\" href=\"../../assets/rfc-site.css\">", 1)
-    cfg = {"repo": CFG["repo"], "giscus": CFG["giscus"]}
+    cfg = {"repo": CFG["repo"], "giscus": CFG["giscus"], "comments": CFG.get("comments", {})}
     inject = (f'<script>window.PHIZ_SITE={json.dumps(cfg)};window.PHIZ_RFC_ID={json.dumps(meta["id"])};</script>\n'
               '<script src="../../assets/mermaid.min.js"></script>\n<script src="../../assets/rfc-site.js"></script>\n</body>')
     page = page.replace("</body>", inject, 1) if "</body>" in page else page + inject

@@ -5,5 +5,9 @@
     "repoId": "",
     "category": "RFC comments",
     "categoryId": ""
+  },
+  "comments": {
+    "supabaseUrl": "",
+    "supabaseKey": ""
   }
 }
