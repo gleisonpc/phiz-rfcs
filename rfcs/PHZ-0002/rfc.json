@@ -1,0 +1,18 @@
+{
+  "id": "PHZ-0002",
+  "title": {
+    "pt": "Migração da integração CredPay para a API GruPag",
+    "en": "Migrating the CredPay integration to the GruPag API",
+    "zh": "将 CredPay 集成迁移到 GruPag API"
+  },
+  "summary": {
+    "pt": "Troca das rotas atuais da CredPay (checkout, tokenização, pré-autorização, PIX, 3DS) pelas rotas da nova API GruPag, com API Key, valores em centavos e virada controlada pela configuração de rotas.",
+    "en": "Replacing the current CredPay routes (checkout, tokenization, pre-authorization, PIX, 3DS) with the new GruPag API, using an API Key, amounts in cents and a cutover driven by route configuration.",
+    "zh": "用新的 GruPag API 替换现有 CredPay 路由（收银台、令牌化、预授权、PIX、3DS），采用 API Key、以分为单位的金额，并通过路由配置控制切换。"
+  },
+  "status": "draft",
+  "authors": ["Gleison"],
+  "reviewers": [],
+  "created": "2026-10-16",
+  "updated": "2026-10-16"
+}

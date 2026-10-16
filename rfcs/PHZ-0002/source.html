@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PHZ-0002</title>
+<style>:root{color-scheme:light dark}body{font:16px/1.65 system-ui,sans-serif;max-width:76ch;margin:40px auto;padding:0 16px}h2{scroll-margin-top:80px}table{border-collapse:collapse;width:100%;font-size:.92em;margin:12px 0}th,td{border:1px solid #8884;padding:6px 8px;text-align:left;vertical-align:top}code{font-size:.9em}</style>
+</head><body>
+<h1>Migração da integração CredPay para a API GruPag</h1>
+
+<h2 id="resumo">Resumo</h2>
+<p>A CredPay publicou uma API nova, documentada no portal GruPag (<code>api2.grupag.com.br</code>). Ela troca as várias APIs que usamos hoje, cada uma com seu login, por uma só: uma base, autenticação por API Key, valores em centavos e um contrato único para cartão, 3DS, pré-autorização e PIX.</p>
+<p>Esta RFC propõe migrar o <code>phiz-microwd-channel</code> e o <code>phiz-pay-card-vault</code> para essas rotas novas. A virada é feita pela configuração de rotas do painel interno, operação por operação, sem desligar a integração antiga até que cada operação esteja validada. Ela também lista o que a API nova <strong>não cobre</strong> (maquininha, conciliação, transferência bancária), que fica na integração antiga até termos resposta da CredPay.</p>
+
+<h2 id="contexto">Contexto</h2>
+<p>Hoje a CredPay é acessada por dois serviços. O caminho de uma cobrança é:</p>
+<pre class="mermaid">
+flowchart LR
+  App[phiz-flutter] --> AS[microwd-appserver] --> BA[microwd-backapply] --> CH[microwd-channel]
+  CH --> CP[(CredPay)]
+  CH --> CV[phiz-pay-card-vault] --> CP
+  IF[phiz-inner-front] --> IN[phiz-inner] --> DB[(route_cfg / road_info)]
+  DB -.lê.-> BA
+  DB -.lê.-> CH
+</pre>
+<ul>
+<li>O <strong>backapply</strong> escolhe a rota pela tabela <code>route_cfg</code> (tipo de transação, forma de pagamento e BIN do cartão), em <code>RoadRouteServiceImpl</code>.</li>
+<li>O <strong>channel</strong> recebe um código de serviço (B10, B21, B61…) e executa o serviço registrado com esse nome. A URL base de cada canal vem da tabela <code>road_info</code>.</li>
+<li>As duas tabelas são mantidas pelo operador no painel (<code>channel/routecfg</code> e <code>channel/roadInfo</code>). Isso permite trocar o canal de uma operação sem deploy, e é o mecanismo que esta RFC usa para a virada.</li>
+</ul>
+
+<h2 id="situacao-atual">Integrações atuais</h2>
+<p>O levantamento no código encontrou <strong>seis integrações</strong> no channel e <strong>duas</strong> no card-vault, com quatro formas diferentes de autenticação.</p>
+<table>
+<tr><th>#</th><th>Integração</th><th>Onde</th><th>Autenticação</th><th>Códigos de serviço</th></tr>
+<tr><td>1</td><td>Checkout e cartão salvo</td><td>channel: <code>CheckOutTokenServiceImpl</code>, <code>CheckOutOperationServiceImpl</code>, <code>credPayRefactor/</code></td><td><code>POST /AuthCredPay</code></td><td>B20–B25, B02, B03, Z519, Z520, Z523</td></tr>
+<tr><td>2</td><td>Pré-autorização</td><td>channel: <code>PreAuthService</code></td><td>a mesma do checkout</td><td>B26, B27, B28</td></tr>
+<tr><td>3</td><td>PIX, QR e transferência</td><td>channel: <code>service/credpay/</code></td><td><code>POST /oauth/token</code></td><td>B10–B13</td></tr>
+<tr><td>4</td><td>Cartão com 3DS (plataforma)</td><td>channel: <code>ThreeDomainSecurePaymentService</code></td><td><code>POST autenticacao/gerar-token</code></td><td>B61–B70</td></tr>
+<tr><td>5</td><td>Maquininha (TEF)</td><td>channel: <code>TefService</code></td><td>token do checkout</td><td>B47, B48</td></tr>
+<tr><td>6</td><td>Conciliação</td><td>channel: <code>SynChannelDataService</code>, jobs <code>Credpay*ReconciliationJob</code></td><td><code>/AuthCredPay/</code>, URL fixa no código</td><td>jobs</td></tr>
+<tr><td>7</td><td>Tokenização do cofre</td><td>card-vault: <code>CredpagamentosClient</code></td><td><code>POST /AuthCredPay</code></td><td>—</td></tr>
+<tr><td>8</td><td>Validação de cartão</td><td>card-vault: <code>CredpayClient</code></td><td><code>POST /v1/autenticacao/gerar-token</code></td><td>—</td></tr>
+</table>
+<p>Quais dessas rotas estão ativas em produção depende da configuração em <code>route_cfg</code>, que não foi consultada para esta RFC. Esse levantamento é o primeiro passo da implementação.</p>
+
+<h2 id="api-nova">A API nova</h2>
+<ul>
+<li><strong>Base única:</strong> <code>https://api2-homolog.grupag.com.br</code> (homologação) e <code>https://api2.grupag.com.br</code> (produção).</li>
+<li><strong>Autenticação:</strong> <code>Authorization: Bearer &lt;API Key&gt;</code>. A chave começa com <code>gpk_</code>, é por usuário do portal, não expira e não tem renovação. Regenerar invalida a anterior na hora, sem período de convivência. Isso elimina os quatro logins e o <code>CredPayAuthTask</code>.</li>
+<li><strong>Empresa da chamada:</strong> o header <code>Cliente-Id</code> escolhe em qual empresa vinculada a chamada opera. Sem ele, vale a empresa principal do usuário. <strong>Precisa ser idêntico em todas as chamadas de um mesmo fluxo</strong> (3DS, pagamento, consulta, cancelamento); a API não avisa quando ele muda, e o erro aparece como "3DS não encontrado" ou "transação não encontrada".</li>
+<li><strong>Valores:</strong> no cartão, em centavos como string (<code>"15000"</code> = R$ 150,00). No PIX, em reais como decimal (<code>15.00</code>). Na simulação, centavos como inteiro.</li>
+<li><strong>Idempotência:</strong> no cartão, pelo <code>orderId</code>: repetir devolve o resultado da primeira autorização, e duas chamadas simultâneas dão 409. No PIX, cobranças repetidas do mesmo valor numa janela curta dão 409.</li>
+<li><strong>Respostas:</strong> o formato muda por família (<code>{status, message, details}</code>, <code>{status, message, data}</code> ou campos na raiz). Erros têm corpo único <code>{message}</code>, e 502/504 indicam falha ao escolher o destino ou falta de resposta do provedor.</li>
+<li><strong>Escolha do provedor:</strong> no PIX a CredPay escolhe o banco sozinha; a resposta diz qual (<code>destination</code>).</li>
+</ul>
+
+<h2 id="mapeamento">Mapeamento rota a rota</h2>
+<h3>Cartão salvo e checkout (integração 1)</h3>
+<table>
+<tr><th>Hoje</th><th>Na API nova</th><th>O que muda</th></tr>
+<tr><td><code>POST /AuthCredPay</code></td><td>— (API Key)</td><td>Some o login e o cache de token.</td></tr>
+<tr><td><code>POST /Tokenizacao/CriarToken</code> (B20, Z519)</td><td><code>POST /v1/pagamento/cartao/adicionar</code></td><td>Exige <code>authorizerId</code>. Um token vale para <strong>uma</strong> autorizadora: crédito e débito precisam de tokens separados. Guardar o <code>customerId</code> devolvido.</td></tr>
+<tr><td><code>GET /Tokenizacao/Obter/{id}</code></td><td><code>POST /v1/pagamento/cartao/buscar</code></td><td>Devolve só o status (<code>ATV</code>/<code>INA</code>).</td></tr>
+<tr><td><code>GET /Tokenizacao/Listar</code></td><td>sem equivalente</td><td>Ver <a href="#lacunas">Lacunas</a>.</td></tr>
+<tr><td><code>POST /Tokenizacao/Excluir/{id}</code> (B24, Z520)</td><td><code>DELETE /v1/pagamento/cartao/remover</code></td><td>DELETE com corpo <code>{token, customer}</code>.</td></tr>
+<tr><td><code>POST /Tokenizacao/Pagar</code> (B21, B02)</td><td><code>POST /v1/pagamento</code></td><td>Valor em centavos; <code>orderId</code> obrigatório e idempotente; <code>authorizerId</code> igual ao da tokenização. A resposta traz o <code>nit</code>, que passa a ser a chave da transação.</td></tr>
+<tr><td><code>POST /Tokenizacao/Cancelar/{transacaoId}/{referenceId}</code> (B25, B03)</td><td><code>DELETE /v1/pagamento/cancelar</code></td><td>Corpo <code>{nit, amount}</code>, aceita estorno parcial. <strong>Estorno só até 23:59 do dia da captura</strong> (horário de Brasília).</td></tr>
+<tr><td><code>GET /Consulta/TransactionId/{id}</code> (B22, Z523)<br><code>GET /Consulta/NumeroInterno/{n}</code></td><td><code>GET /v1/pagamento/consulta/nit?nit=</code></td><td>Consulta só pelo <code>nit</code>. Não há busca por número interno nem por <code>orderId</code>, então o <code>nit</code> precisa ser gravado no pedido.</td></tr>
+<tr><td><code>GET /Consulta/Subdominio/Datas/{ini}/{fim}</code></td><td>sem equivalente</td><td>Usado na conciliação. Ver <a href="#lacunas">Lacunas</a>.</td></tr>
+</table>
+
+<h3>Pré-autorização (integração 2)</h3>
+<table>
+<tr><th>Hoje</th><th>Na API nova</th><th>O que muda</th></tr>
+<tr><td><code>POST /Transacao/Autorizar</code> (B26)</td><td><code>POST /v1/pagamento/preautorizacao</code></td><td>Mesmo corpo do pagamento; nasce <code>AUTORIZADO</code>.</td></tr>
+<tr><td><code>POST /Transacao/Capturar/{transacaoId}/{referenceId}/{valor}</code> (B27)</td><td><code>POST /v1/pagamento/preautorizacao/liquidar</code></td><td>Corpo <code>{nit, amount}</code>; aceita captura parcial.</td></tr>
+<tr><td><code>POST /Transacao/Cancelar/{transacaoId}/{referenceId}</code> (B28)<br><code>POST /Transacao/Cancelar/Parcial</code></td><td><code>DELETE /v1/pagamento/cancelar</code></td><td>Um endpoint só; o valor define se é parcial. Desfazer reserva não tem o limite de 23:59.</td></tr>
+</table>
+
+<h3>Cartão com 3DS (integração 4)</h3>
+<table>
+<tr><th>Hoje</th><th>Na API nova</th><th>O que muda</th></tr>
+<tr><td><code>autenticacao/gerar-token</code></td><td>— (API Key)</td><td>Some o login.</td></tr>
+<tr><td><code>cartao/adicionar/</code> (B62)</td><td><code>POST /v1/pagamento/cartao/adicionar</code></td><td>Como na integração 1.</td></tr>
+<tr><td><code>cartao/validar/</code> (B61), <code>3ds/checar/</code> (B69)</td><td><code>POST /v1/pagamento/cartao/buscar</code></td><td>Confirmar se "validar" hoje faz mais do que checar status.</td></tr>
+<tr><td><code>pagamento/cartao/3ds/configurar/</code> (B63)</td><td><code>POST /v1/pagamento/3ds/autenticacao</code> e depois <code>POST /v1/pagamento/3ds/configuracao</code></td><td>Vira duas chamadas. A primeira gera o <code>merchantChargeId</code>, que identifica a transação até o fim.</td></tr>
+<tr><td><code>pagamento/cartao/3ds/desafio/</code> (B64)</td><td>passos no navegador do pagador</td><td><strong>O 3DS Method e o desafio rodam no navegador</strong>, por POST de formulário com dados em base64url. Hoje o backapply devolve uma URL pronta (<code>certifyUrl</code>) em <code>CardCertifyServiceImpl</code>; a tela que abre essa URL precisa mudar.</td></tr>
+<tr><td><code>pagamento/cartao/3ds/checar/desafio/</code> (B65)</td><td><code>GET /v1/pagamento/3ds/consultar3DS?merchantChargeId=</code></td><td>Aprovado quando vêm <code>eci</code> e <code>authentication.value</code>.</td></tr>
+<tr><td><code>pagamento/cartao/3ds/cobrar/</code> (B66)</td><td><code>POST /v1/pagamento</code> com <code>merchantChargeId</code></td><td>A autenticação vale 15 minutos e é consumida na cobrança.</td></tr>
+<tr><td><code>pagamento/cartao/3ds/preautorizada/cobrar/</code> (B67)</td><td><code>POST /v1/pagamento/preautorizacao</code> e <code>/liquidar</code></td><td>—</td></tr>
+<tr><td><code>pagamento/cartao/3ds/cancelar/</code> (B68)</td><td><code>DELETE /v1/pagamento/cancelar</code></td><td>Regra de 23:59.</td></tr>
+<tr><td><code>pagamento/cartao/3ds/consultar/</code></td><td><code>GET /v1/pagamento/consulta/nit</code></td><td>—</td></tr>
+</table>
+
+<h3>PIX (integração 3)</h3>
+<table>
+<tr><th>Hoje</th><th>Na API nova</th><th>O que muda</th></tr>
+<tr><td><code>POST /oauth/token</code></td><td>— (API Key)</td><td>Some o login.</td></tr>
+<tr><td><code>POST /api/generate-qrcodes</code> (B10)</td><td><code>POST /transacional/pix/qrcode</code></td><td>Valor em reais. Síncrono, até 30 s; sem resposta, 504.</td></tr>
+<tr><td><code>GET /api/find-qrcode/{id}</code> (B11)</td><td><code>GET /transacional/pix/consulta/{transactionId}</code></td><td>Pago quando o status é <code>CONFIRMADO</code>. Não há webhook documentado: a confirmação é por consulta.</td></tr>
+<tr><td><code>POST /api/bank-transfers</code> (B12)</td><td>sem equivalente</td><td>Ver <a href="#lacunas">Lacunas</a>.</td></tr>
+<tr><td><code>POST /api/list-transactions</code> (B13)</td><td>sem equivalente</td><td>Ver <a href="#lacunas">Lacunas</a>.</td></tr>
+<tr><td>—</td><td><code>POST /transacional/pix/cancelamento/{transactionId}</code></td><td>Novo. Até 24 h após o pagamento devolve na hora; depois disso abre <strong>disputa</strong>.</td></tr>
+<tr><td>—</td><td><code>POST /transacional/pix/disputa</code></td><td>Novo, só para perfil Admin. Candidato a uma tela no painel interno.</td></tr>
+</table>
+
+<h3>Cofre de cartões (integrações 7 e 8)</h3>
+<table>
+<tr><th>Hoje</th><th>Na API nova</th><th>O que muda</th></tr>
+<tr><td><code>POST /AuthCredPay</code>, <code>POST /v1/autenticacao/gerar-token</code></td><td>— (API Key)</td><td>Dois logins viram uma chave.</td></tr>
+<tr><td><code>POST /Tokenizacao/CriarToken</code></td><td><code>POST /v1/pagamento/cartao/adicionar</code></td><td>Exige <code>authorizerId</code>.</td></tr>
+<tr><td><code>GET /Tokenizacao/ObterDadosToken/{token}</code></td><td><code>POST /v1/pagamento/cartao/buscar</code></td><td>Só devolve status. Confirmar se o cofre usa algum outro dado dessa resposta.</td></tr>
+<tr><td><code>POST /Tokenizacao/Excluir/Token/{token}</code></td><td><code>DELETE /v1/pagamento/cartao/remover</code></td><td>—</td></tr>
+<tr><td><code>POST /v1/pagamento</code> (validar cartão)</td><td><code>POST /v1/pagamento</code></td><td>Mesmo caminho e mesmo formato de cartão; muda a base (<code>api-plataforma.credpay.com.br</code> → <code>api2.grupag.com.br</code>) e a autenticação. Passa a exigir <code>orderId</code>.</td></tr>
+</table>
+
+<h2 id="lacunas">Lacunas</h2>
+<p>A documentação nova não tem equivalente para estas operações. Elas continuam na integração atual até a CredPay responder.</p>
+<table>
+<tr><th>Operação</th><th>Uso hoje</th><th>Impacto se sumir</th></tr>
+<tr><td>Maquininha TEF (<code>/Pdv/CriarOperacao</code>, <code>/Pdv/GetOperacao</code>)</td><td>Venda presencial dos comerciantes (B47, B48)</td><td>Para a venda em POS da CredPay.</td></tr>
+<tr><td>Extrato e consultas por período (<code>/Movimentacao/Analitico</code>, <code>/Consulta/Subdominio/Datas</code>)</td><td>Conciliação diária</td><td>A conciliação deixa de conferir o canal.</td></tr>
+<tr><td>Transferência bancária (<code>/api/bank-transfers</code>)</td><td>B12</td><td>Para a transferência por esse canal.</td></tr>
+<tr><td>Listagens (<code>/Tokenizacao/Listar</code>, <code>/api/list-transactions</code>)</td><td>Consulta e sincronização</td><td>Passamos a depender só dos dados gravados do nosso lado.</td></tr>
+<tr><td>Recorrência</td><td>Campos de recorrência no <code>CheckOutPayReq</code></td><td>A doc menciona contrato de recorrência, mas não documenta as rotas.</td></tr>
+</table>
+
+<h2 id="quebras">Mudanças que quebram contrato</h2>
+<ol>
+<li><strong>Tokens de cartão existentes.</strong> Não está claro se um token criado em <code>/Tokenizacao/CriarToken</code> vale em <code>/v1/pagamento</code>. Se não valer, todo cartão salvo precisa ser tokenizado de novo, o que exige o PAN e, portanto, passa pelo cofre. É o maior risco da migração.</li>
+<li><strong>Valores.</strong> O checkout hoje envia reais em <code>BigDecimal</code> (<code>valorInicial</code>); o cartão novo usa centavos em string, e o PIX novo continua em reais. A conversão fica em um único lugar no adaptador.</li>
+<li><strong>Identificadores.</strong> Saem <code>transacaoId</code>/<code>referenceId</code>/<code>numeroInterno</code>; entram <code>nit</code>, <code>merchantChargeId</code> e <code>customerId</code>. As tabelas de pedido e de cartão precisam de colunas para eles.</li>
+<li><strong>Prazo de estorno.</strong> No cartão, só até 23:59 do dia da captura; depois disso, fora da API. No PIX, depois de 24 h vira disputa. Os fluxos de reembolso do app e do painel precisam tratar os dois casos.</li>
+<li><strong>Cliente-Id.</strong> Hoje separamos comerciantes por <code>subDominioId</code>/<code>lojaId</code>. Precisamos de um mapeamento de cada comerciante para o <code>Cliente-Id</code> e garantir que o mesmo valor vá em todas as chamadas do fluxo.</li>
+<li><strong>3DS no navegador.</strong> O front que hoje abre a <code>certifyUrl</code> passa a montar e enviar formulários (3DS Method e desafio).</li>
+<li><strong>Status.</strong> Novos rótulos (<code>CONFIRMADO</code>, <code>AUTORIZADO</code>, <code>PENDENTE</code>, <code>NEGADO</code>…; no PIX também <code>ESTORNADO</code>, <code>DISPUTA</code>) precisam ser mapeados para os status internos.</li>
+</ol>
+
+<h2 id="proposta">Proposta</h2>
+<h3>Princípio: um provedor novo, ao lado do antigo</h3>
+<p>Em vez de alterar os serviços atuais, criamos no channel um adaptador novo (<code>service/grupag/</code>) com <strong>códigos de serviço novos</strong> e um <code>road_info</code> próprio, apontando para <code>api2.grupag.com.br</code>. A virada de cada operação é uma troca de linha em <code>route_cfg</code> pelo painel, e voltar atrás é desfazer essa troca. Os dois caminhos convivem até o fim da migração.</p>
+<h3>Por repositório</h3>
+<table>
+<tr><th>Repositório</th><th>Mudança</th></tr>
+<tr><td><code>phiz-microwd-channel</code></td><td>Cliente HTTP único com API Key e <code>Cliente-Id</code>; adaptadores de cartão, 3DS, pré-autorização e PIX; conversão de valores e de status; registro dos novos códigos de serviço.</td></tr>
+<tr><td><code>phiz-pay-card-vault</code></td><td>Trocar <code>CredpagamentosClient</code> e <code>CredpayClient</code> pelo contrato novo, atrás de uma configuração, para poder voltar.</td></tr>
+<tr><td><code>phiz-microwd-backapply</code></td><td>Gravar <code>nit</code>, <code>merchantChargeId</code> e <code>customerId</code>; adaptar <code>CardCertifyServiceImpl</code> ao 3DS novo; tratar o prazo de estorno.</td></tr>
+<tr><td><code>phiz-microwd-common</code></td><td>Novas colunas nas entidades de pedido e de cartão.</td></tr>
+<tr><td><code>phiz-inner</code> / <code>phiz-inner-front</code></td><td>Cadastrar os novos códigos e o <code>road_info</code>; tela de disputa PIX (opcional, na fase de PIX).</td></tr>
+<tr><td>Front do 3DS</td><td>Montar e enviar o 3DS Method e o desafio. Identificar qual front abre a <code>certifyUrl</code> hoje (app ou formulário web).</td></tr>
+</table>
+<h3>Credencial</h3>
+<p>A API Key não expira, mas regenerar derruba a anterior sem aviso. Ela vai para o cofre de segredos de cada ambiente, nunca para o código nem em texto puro no <code>road_info</code>, e a troca é feita numa janela combinada.</p>
+
+<h2 id="fases">Plano de migração</h2>
+<ol>
+<li><strong>Fase 0: preparação.</strong> Levantar em <code>route_cfg</code> quais códigos CredPay estão ativos em produção; obter a chave de homologação; responder às <a href="#perguntas">perguntas em aberto</a>, principalmente a dos tokens.</li>
+<li><strong>Fase 1: PIX.</strong> Gerar QR e consultar (B10, B11). É o fluxo mais simples e sem cartão. Virar primeiro para um comerciante de teste.</li>
+<li><strong>Fase 2: cartão sem 3DS.</strong> Tokenização, pagamento, cancelamento e consulta, incluindo o cofre. Depende da resposta sobre tokens antigos.</li>
+<li><strong>Fase 3: 3DS.</strong> Inclui a mudança no front.</li>
+<li><strong>Fase 4: pré-autorização.</strong></li>
+<li><strong>Fase 5: desligamento.</strong> Remover os códigos antigos de <code>route_cfg</code>, o <code>CredPayAuthTask</code> e os clientes antigos. TEF, conciliação e transferência ficam de fora até haver equivalente.</li>
+</ol>
+<p>Em cada fase: homologação com a coleção Postman da CredPay, um comerciante piloto em produção pela rota, observação de taxa de aprovação e de erros 4xx/5xx por código, e depois o restante dos comerciantes.</p>
+
+<h2 id="riscos">Riscos</h2>
+<table>
+<tr><th>Risco</th><th>Mitigação</th></tr>
+<tr><td>Tokens antigos não valem na API nova</td><td>Confirmar na Fase 0; se for o caso, plano de retokenização pelo cofre antes da Fase 2.</td></tr>
+<tr><td><code>Cliente-Id</code> inconsistente no meio do fluxo</td><td>Resolver o <code>Cliente-Id</code> uma vez por pedido, gravar e reutilizar; teste automatizado do fluxo 3DS completo.</td></tr>
+<tr><td>Erro de unidade (reais × centavos)</td><td>Conversão em um único ponto, com testes de contrato por endpoint.</td></tr>
+<tr><td>Estorno recusado depois das 23:59</td><td>Avisar no app e no painel; rotina para devolução fora da API.</td></tr>
+<tr><td>Conciliação sem fonte de dados</td><td>Manter o extrato antigo até a CredPay oferecer um substituto.</td></tr>
+<tr><td>Homologação apontando para produção</td><td>O card-vault hoje usa a base de produção como padrão porque o sandbox estava quebrado. Na API nova, exigir a base de homologação fora de produção.</td></tr>
+</table>
+
+<h2 id="perguntas">Perguntas em aberto para a CredPay</h2>
+<ol>
+<li>Tokens criados em <code>/Tokenizacao/CriarToken</code> e no cofre continuam válidos em <code>/v1/pagamento</code>? Existe migração em lote?</li>
+<li>Qual o substituto para TEF (<code>/Pdv/*</code>), extrato (<code>/Movimentacao/Analitico</code>), transferência bancária e listagem de transações?</li>
+<li>Há webhook para confirmação de PIX e de cartão, ou só consulta?</li>
+<li>Quais são as rotas de recorrência citadas na documentação?</li>
+<li>O <code>hashSimulacao</code> é conferido no pagamento? A página de simulação diz que sim; a de cartão diz que é aceito e ignorado.</li>
+<li>Como mapear nossos comerciantes (<code>subDominioId</code>/<code>lojaId</code>) para <code>Cliente-Id</code>? Uma chave por ambiente com todos vinculados, ou uma por comerciante?</li>
+<li>Há limite de requisições por chave?</li>
+<li>Qual o prazo de desligamento das APIs atuais?</li>
+</ol>
+
+<h2 id="fora-de-escopo">Fora de escopo</h2>
+<ul>
+<li>Uso da API de Simulação para mostrar parcelas e taxas no app. É uma melhoria possível, não necessária para a migração.</li>
+<li>Outros canais (Pinbank, Cronos, Afro).</li>
+</ul>
+
+<h2 id="referencias">Referências</h2>
+<ul>
+<li>Documentação GruPag (exige login): Acesso e API Key, APIs PIX, API Compra com Cartão, API de Simulação.</li>
+<li>channel: <code>CheckOutTokenServiceImpl</code>, <code>CheckOutOperationServiceImpl</code>, <code>PreAuthService</code>, <code>service/credpay/impl/*</code>, <code>ThreeDomainSecurePaymentService</code>, <code>TefService</code>, <code>SynChannelDataService</code>, <code>ApiCodeConstant</code>.</li>
+<li>card-vault: <code>CredpagamentosClient</code>, <code>CredpayClient</code>, <code>application.yaml</code>.</li>
+<li>backapply: <code>RoadRouteServiceImpl</code>, <code>CardCertifyServiceImpl</code>.</li>
+</ul>
+</body></html>
