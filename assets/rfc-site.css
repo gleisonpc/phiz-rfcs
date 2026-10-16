@@ -32,7 +32,7 @@ pre.mermaid { background: transparent; border: 0; padding: 0; font-family: inher
 .cmt-quote-pre .cmt-quote { flex: 1 1 100%; margin: 0; }
 .cmt-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .cmt-row .cmt-note { margin: 0; }
-.cmt-send { font: 600 .85rem var(--f-body, system-ui); color: #fff; background: var(--accent-ink); border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
+.cmt-send { font: 600 .85rem var(--f-body, system-ui); color: var(--bg); background: var(--accent-ink); border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
 .cmt-send:disabled { opacity: .6; cursor: progress; }
 .cmt-err { margin: 0; color: var(--bad, #b3261e); font-size: .85rem; }
 mark.cmt-mark { background: var(--accent-soft); color: inherit; border-bottom: 2px solid var(--accent); border-radius: 2px; cursor: pointer; padding: 0 1px; }
